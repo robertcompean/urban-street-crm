@@ -1,0 +1,2624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Urban Street CRM</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:#f4f4f5;font-family:'Barlow Condensed',sans-serif;}
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-track{background:#f4f4f5}
+  ::-webkit-scrollbar-thumb{background:#d0d0d5;border-radius:3px}
+  ::-webkit-scrollbar-thumb:hover{background:#b0b0b8}
+  .us-table-wrap{width:100%;overflow-x:auto}
+  .us-table{width:100%;border-collapse:collapse;font-size:15px}
+  .us-table thead th{background:#ffffff;color:#888;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;padding:10px 12px;text-align:left;border-bottom:1px solid #e2e2e5;white-space:nowrap;position:sticky;top:0;z-index:2}
+  .us-table tbody tr{border-bottom:1px solid #e2e2e5;cursor:pointer;transition:background .1s}
+  .us-table tbody tr:hover{background:#f0f0f2}
+  .us-table tbody tr:hover .us-row-arrow{opacity:1;transform:translateX(0)}
+  .us-table tbody td{padding:10px 12px;vertical-align:middle;white-space:nowrap}
+  .us-row-arrow{opacity:0;transform:translateX(-4px);transition:all .15s;color:#e8622a}
+  .us-detail{animation:slideIn .22s cubic-bezier(.16,1,.3,1)}
+  @keyframes slideIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:translateX(0)}}
+  .us-field-card{background:#fff;border:1px solid #e2e2e5;border-radius:4px;transition:border-color .15s}
+  .us-field-card:hover{border-color:#bbbbc2}
+  .us-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:2px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase}
+  .us-btn{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;background:transparent;border:1px solid #d0d0d5;color:#666;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border-radius:3px;transition:all .15s}
+  .us-btn:hover{border-color:#e8622a;color:#e8622a;background:rgba(232,98,42,.04)}
+  .us-btn:disabled{opacity:0.5;cursor:not-allowed}
+  .us-save-btn{background:#e8622a;border-color:#e8622a;color:#fff;font-weight:700}
+  .us-save-btn:hover:not(:disabled){background:#c8501a;border-color:#c8501a;color:#fff}
+  .us-delete-btn{border-color:#cc2222;color:#cc2222}
+  .us-delete-btn:hover{background:rgba(204,34,34,.06);border-color:#cc2222;color:#cc2222}
+  .us-edit-contact-btn{background:#e8622a;border-color:#e8622a;color:#fff;font-weight:700}
+  .us-edit-contact-btn:hover{background:#c8501a;border-color:#c8501a;color:#fff}
+  .us-section-label{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:#999;margin-bottom:8px}
+  .us-mono{font-family:'JetBrains Mono',monospace}
+  .us-search{background:#fff;border:1px solid #d0d0d5;color:#111;font-family:'Barlow Condensed',sans-serif;font-size:15px;padding:10px 16px;border-radius:3px;outline:none;width:240px;transition:border-color .15s}
+  .us-search:focus{border-color:#e8622a}
+  .us-search::placeholder{color:#aaa}
+  .us-loading{display:flex;align-items:center;justify-content:center;min-height:300px;gap:12px;color:#999;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.08em}
+  .us-spinner{width:20px;height:20px;border:2px solid #e2e2e5;border-top-color:#e8622a;border-radius:50%;animation:spin .7s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .us-input{background:#fff;border:1px solid #d0d0d5;border-radius:3px;color:#111;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:600;padding:10px 14px;width:100%;outline:none;transition:border-color .15s}
+  .us-input:focus{border-color:#e8622a}
+  .us-input::placeholder{color:#bbb;font-weight:400}
+  .us-input-mono{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:400}
+  .us-select{background:#fff;border:1px solid #d0d0d5;border-radius:3px;color:#111;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:600;padding:10px 14px;width:100%;outline:none;transition:border-color .15s;cursor:pointer;-webkit-appearance:none;appearance:none}
+  .us-select:focus{border-color:#e8622a}
+  .us-textarea{background:#fff;border:1px solid #d0d0d5;border-radius:3px;color:#111;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;padding:12px 14px;width:100%;min-height:100px;resize:vertical;outline:none;transition:border-color .15s}
+  .us-textarea:focus{border-color:#e8622a}
+  .us-textarea::placeholder{color:#bbb}
+  .us-tag{display:inline-block;padding:2px 8px;background:#f0f0f2;border:1px solid #e2e2e5;border-radius:2px;font-size:12px;font-family:'JetBrains Mono',monospace;letter-spacing:.04em;color:#666}
+  .us-tag-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(232,98,42,.08);border:1px solid rgba(232,98,42,.3);border-radius:12px;font-size:12px;font-family:'JetBrains Mono',monospace;letter-spacing:.04em;color:#e8622a}
+  .us-tag-pill-remove{cursor:pointer;opacity:.6;font-size:14px;line-height:1;transition:opacity .1s}
+  .us-tag-pill-remove:hover{opacity:1}
+  .us-tag-available{display:inline-flex;align-items:center;padding:4px 10px;background:transparent;border:1px solid #d0d0d5;border-radius:12px;font-size:12px;font-family:'JetBrains Mono',monospace;letter-spacing:.04em;color:#888;cursor:pointer;transition:all .15s}
+  .us-tag-available:hover{border-color:#e8622a;color:#e8622a;background:rgba(232,98,42,.04)}
+  .us-divider{border:none;border-top:1px solid #e2e2e5;margin:24px 0}
+  .us-avatar{width:52px;height:52px;background:#f0f0f2;border:1px solid #e2e2e5;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#e8622a;flex-shrink:0}
+  .us-toast{position:fixed;bottom:24px;right:24px;background:#e8622a;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.1em;padding:10px 20px;border-radius:3px;animation:toastIn .2s ease;z-index:999}
+  .us-toast-red{background:#cc2222;color:#fff}
+  @keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .edit-section{background:#fff;border:1px solid #e2e2e5;border-radius:4px;padding:20px;display:flex;flex-direction:column;gap:16px}
+  .edit-section-title{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:#e8622a;margin-bottom:4px}
+  /* Confirm modal */
+  .us-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:1000}
+  .us-modal{background:#fff;border:1px solid #e2e2e5;border-radius:6px;padding:32px;max-width:400px;width:90%;text-align:center}
+  /* Column settings panel */
+  .us-settings-panel{position:absolute;top:100%;right:0;background:#fff;border:1px solid #d0d0d5;border-radius:4px;padding:16px;min-width:200px;z-index:10;margin-top:6px;box-shadow:0 8px 32px rgba(0,0,0,.12)}
+  .us-col-toggle{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #e2e2e5;cursor:pointer;gap:12px}
+  .us-col-toggle:last-child{border-bottom:none}
+  .us-col-toggle-label{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;color:#888;text-transform:uppercase}
+  .us-col-toggle:hover .us-col-toggle-label{color:#111}
+  .us-switch{width:28px;height:16px;background:#d0d0d5;border-radius:8px;position:relative;flex-shrink:0;transition:background .15s}
+  .us-switch.on{background:#e8622a}
+  .us-switch::after{content:'';position:absolute;width:12px;height:12px;background:#fff;border-radius:50%;top:2px;left:2px;transition:transform .15s}
+  .us-switch.on::after{transform:translateX(12px)}
+  /* Conversations */
+  .us-conv-thread{transition:border-color .15s,background .15s}
+  .us-conv-thread:hover{border-color:#bbbbc2 !important}
+  .us-msg-bubble{transition:none}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef } = React;
+
+const SUPABASE_URL = "https://kdxbkwcvrihcxqhukjee.supabase.co";
+const SUPABASE_KEY = "sb_publishable_9whlg1wqquwmjgivsavs0A_H7HpbgE9";
+
+const supaFetch = async (path, options = {}) => {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+      ...(options.headers || {}),
+    },
+  });
+  if (!res.ok) { const err = await res.text(); throw new Error(err); }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+};
+
+const C = {
+  bg:"#f4f4f5", surface:"#ffffff", elevated:"#f9f9f9", border:"#e2e2e5",
+  accent:"#e8622a", text:"#111111", textSub:"#555555", textMuted:"#999999",
+  red:"#cc2222", green:"#1a7f3c", orange:"#c45c00",
+};
+
+const fmt = {
+  date: (v) => {
+    if (!v) return "—";
+    const d = new Date(v);
+    return isNaN(d) ? v : d.toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
+  },
+  phone: (v) => {
+    if (!v) return "—";
+    const d = String(v).replace(/\D/g,"");
+    if (d.length === 10) return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+    if (d.length === 11 && d[0]==="1") return `+1 (${d.slice(1,4)}) ${d.slice(4,7)}-${d.slice(7)}`;
+    return v;
+  },
+  val: (v) => (v == null || v === "" ? "—" : String(v)),
+};
+
+const subColor = (status) => {
+  const s = String(status || "").toLowerCase();
+  if (s==="active"||s==="subscribed"||s==="true") return C.green;
+  if (s==="unsubscribed"||s==="false") return C.red;
+  if (s==="pending") return C.orange;
+  return C.textSub;
+};
+
+const formatPhoneInput = (v) => {
+  const d = String(v||"").replace(/\D/g,"").slice(0,10);
+  if (d.length < 4) return d;
+  if (d.length < 7) return `(${d.slice(0,3)}) ${d.slice(3)}`;
+  return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+};
+
+const formatDateInput = (v) => {
+  const d = String(v||"").replace(/\D/g,"").slice(0,8);
+  if (d.length < 3) return d;
+  if (d.length < 5) return `${d.slice(0,2)}/${d.slice(2)}`;
+  return `${d.slice(0,2)}/${d.slice(2,4)}/${d.slice(4)}`;
+};
+const toISODate = (v) => {
+  if (!v) return null;
+  const parts = v.split("/");
+  if (parts.length === 3 && parts[2].length === 4) return `${parts[2]}-${parts[0].padStart(2,"0")}-${parts[1].padStart(2,"0")}`;
+  return v;
+};
+const toDisplayDate = (v) => {
+  if (!v) return "";
+  const parts = v.split("-");
+  if (parts.length === 3) return `${parts[1]}/${parts[2]}/${parts[0]}`;
+  return v;
+};
+
+// ── Read-only field components
+const PhoneField = ({ label, value }) => (
+  <div className="us-field-card" style={{padding:"14px 16px"}}>
+    <div className="us-section-label">{label}</div>
+    <div style={{display:"flex",alignItems:"center",gap:10}}>
+      <span className="us-mono" style={{fontSize:15,color:C.text}}>{fmt.phone(value)}</span>
+      {value && <a href={`tel:${value}`} style={{color:C.accent,fontSize:11,fontFamily:"'JetBrains Mono',monospace",letterSpacing:"0.1em",textDecoration:"none",border:`1px solid ${C.border}`,padding:"2px 8px",borderRadius:2}}>CALL</a>}
+    </div>
+  </div>
+);
+
+const SubBadge = ({ value }) => {
+  const color = subColor(value);
+  const label = value == null || value === "" ? "UNKNOWN" : String(value).toUpperCase();
+  return (
+    <div className="us-field-card" style={{padding:"14px 16px"}}>
+      <div className="us-section-label">Subscription Status</div>
+      <span className="us-badge" style={{background:`${color}22`,border:`1px solid ${color}55`,color}}>
+        <span style={{width:6,height:6,borderRadius:"50%",background:color,display:"inline-block"}}/>
+        {label}
+      </span>
+    </div>
+  );
+};
+
+// ── Edit field components
+const EField = ({ label, field, form, onChange, mono=false, placeholder="" }) => (
+  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+    <div className="us-section-label">{label}</div>
+    <input className={`us-input${mono?" us-input-mono":""}`} value={form[field]||""} onChange={e=>onChange(field,e.target.value)} placeholder={placeholder||label}/>
+  </div>
+);
+
+const EPhoneField = ({ label, field, form, onChange }) => (
+  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+    <div className="us-section-label">{label}</div>
+    <input className="us-input us-input-mono" value={form[field]||""} onChange={e=>onChange(field,formatPhoneInput(e.target.value))} placeholder="(000) 000-0000"/>
+  </div>
+);
+
+const EDateField = ({ label, field, form, onChange }) => (
+  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+    <div className="us-section-label">{label}</div>
+    <input className="us-input us-input-mono" value={toDisplayDate(form[field])||""} onChange={e=>onChange(field,toISODate(formatDateInput(e.target.value)))} placeholder="MM/DD/YYYY"/>
+  </div>
+);
+
+const ESelect = ({ label, field, form, options, onChange }) => (
+  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+    <div className="us-section-label">{label}</div>
+    <div style={{position:"relative"}}>
+      <select className="us-select" value={form[field]||""} onChange={e=>onChange(field,e.target.value)}>
+        <option value="">— Select —</option>
+        {options.map(o=><option key={o} value={o}>{o}</option>)}
+      </select>
+      <span style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",color:"#555",pointerEvents:"none",fontSize:10}}>▼</span>
+    </div>
+  </div>
+);
+
+// ── Buckets Section (junction-table based, like TagsSection)
+const BucketsSection = ({ contactId, editing }) => {
+  const [allBuckets, setAllBuckets] = useState([]);
+  const [contactBuckets, setContactBuckets] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [newName, setNewName] = useState("");
+  const [adding, setAdding] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [all, cb] = await Promise.all([
+        supaFetch("/buckets?order=name.asc"),
+        supaFetch(`/contact_buckets?contact_id=eq.${contactId}&select=bucket_id`),
+      ]);
+      setAllBuckets(all||[]);
+      setContactBuckets((cb||[]).map(r=>r.bucket_id));
+    } catch(e) { console.error(e); }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [contactId]);
+
+  const addBucket = async (bucketId) => {
+    try {
+      await supaFetch("/contact_buckets", { method:"POST", body:JSON.stringify({ contact_id:contactId, bucket_id:bucketId }) });
+      setContactBuckets(prev=>[...prev, bucketId]);
+    } catch(e) { console.error(e); }
+  };
+
+  const removeBucket = async (bucketId) => {
+    try {
+      await supaFetch(`/contact_buckets?contact_id=eq.${contactId}&bucket_id=eq.${bucketId}`, { method:"DELETE", headers:{Prefer:""} });
+      setContactBuckets(prev=>prev.filter(id=>id!==bucketId));
+    } catch(e) { console.error(e); }
+  };
+
+  const createAndAdd = async () => {
+    const name = newName.trim();
+    if (!name) return;
+    setAdding(true);
+    try {
+      const result = await supaFetch("/buckets", { method:"POST", body:JSON.stringify({ name }) });
+      const created = Array.isArray(result) ? result[0] : result;
+      setAllBuckets(prev=>[...prev, created].sort((a,b)=>a.name.localeCompare(b.name)));
+      await supaFetch("/contact_buckets", { method:"POST", body:JSON.stringify({ contact_id:contactId, bucket_id:created.id }) });
+      setContactBuckets(prev=>[...prev, created.id]);
+      setNewName(""); setShowNew(false);
+    } catch(e) { alert("Failed to create bucket: "+e.message); }
+    setAdding(false);
+  };
+
+  const assigned = allBuckets.filter(b=>contactBuckets.includes(b.id));
+  const available = allBuckets.filter(b=>!contactBuckets.includes(b.id));
+
+  if (loading) return <div style={{color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:11}}>Loading…</div>;
+
+  return (
+    <div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom: editing && available.length ? 10 : 0}}>
+        {assigned.length === 0 && !editing && <span style={{color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:12}}>No buckets</span>}
+        {assigned.map(b=>(
+          <span key={b.id} className="us-tag-pill">
+            {b.name}
+            {editing && <span className="us-tag-pill-remove" onClick={()=>removeBucket(b.id)}>×</span>}
+          </span>
+        ))}
+      </div>
+      {editing && available.length > 0 && (
+        <div style={{marginBottom:10}}>
+          <div style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",letterSpacing:"0.12em",color:C.textMuted,textTransform:"uppercase",marginBottom:8}}>Add bucket</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {available.map(b=>(
+              <span key={b.id} className="us-tag-available" onClick={()=>addBucket(b.id)}>+ {b.name}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {editing && (
+        showNew ? (
+          <div style={{display:"flex",gap:6,marginTop:6}}>
+            <input className="us-input" value={newName} onChange={e=>setNewName(e.target.value)}
+              onKeyDown={e=>{if(e.key==="Enter")createAndAdd();if(e.key==="Escape"){setShowNew(false);setNewName("");}}}
+              placeholder="New bucket name…" style={{fontSize:13,padding:"6px 10px"}} autoFocus/>
+            <button className="us-btn us-save-btn" onClick={createAndAdd} disabled={adding||!newName.trim()} style={{padding:"6px 14px",fontSize:12}}>
+              {adding?"…":"ADD"}
+            </button>
+            <button className="us-btn" onClick={()=>{setShowNew(false);setNewName("");}} style={{padding:"6px 10px",fontSize:12}}>✕</button>
+          </div>
+        ) : (
+          <span className="us-tag-available" onClick={()=>setShowNew(true)} style={{marginTop:4,display:"inline-flex"}}>+ New bucket type</span>
+        )
+      )}
+    </div>
+  );
+};
+
+// ── Confirm Delete Modal
+const ConfirmModal = ({ name, onConfirm, onCancel, loading }) => (
+  <div className="us-modal-overlay">
+    <div className="us-modal">
+      <div style={{fontSize:18,fontWeight:700,color:C.red,marginBottom:8,letterSpacing:"0.02em"}}>DELETE CONTACT</div>
+      <div style={{fontSize:15,color:C.textSub,marginBottom:24,lineHeight:1.5}}>
+        Are you sure you want to delete <span style={{color:C.text,fontWeight:700}}>{name}</span>? This cannot be undone.
+      </div>
+      <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+        <button className="us-btn" onClick={onCancel} disabled={loading}>CANCEL</button>
+        <button className="us-btn us-delete-btn" onClick={onConfirm} disabled={loading} style={{background:"rgba(255,68,68,.1)"}}>
+          {loading ? "DELETING…" : "✕ DELETE"}
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+// ── Tags section on contact detail
+const TagsSection = ({ contactId, editing }) => {
+  const [allTags, setAllTags] = useState([]);
+  const [contactTags, setContactTags] = useState([]);
+  const [loadingTags, setLoadingTags] = useState(true);
+
+  useEffect(() => {
+    const fetchTags = async () => {
+      setLoadingTags(true);
+      try {
+        const [all, ct] = await Promise.all([
+          supaFetch("/tags?order=name.asc"),
+          supaFetch(`/contact_tags?contact_id=eq.${contactId}&select=tag_id`),
+        ]);
+        setAllTags(all||[]);
+        setContactTags((ct||[]).map(r=>r.tag_id));
+      } catch(e) { console.error(e); }
+      setLoadingTags(false);
+    };
+    fetchTags();
+  }, [contactId]);
+
+  const addTag = async (tagId) => {
+    try {
+      await supaFetch("/contact_tags", { method:"POST", body:JSON.stringify({ contact_id:contactId, tag_id:tagId }) });
+      setContactTags(prev=>[...prev, tagId]);
+    } catch(e) { console.error(e); }
+  };
+
+  const removeTag = async (tagId) => {
+    try {
+      await supaFetch(`/contact_tags?contact_id=eq.${contactId}&tag_id=eq.${tagId}`, { method:"DELETE", headers:{ Prefer:"" } });
+      setContactTags(prev=>prev.filter(id=>id!==tagId));
+    } catch(e) { console.error(e); }
+  };
+
+  const assigned = allTags.filter(t=>contactTags.includes(t.id));
+  const available = allTags.filter(t=>!contactTags.includes(t.id));
+
+  if (loadingTags) return <div style={{color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:11}}>Loading tags…</div>;
+
+  return (
+    <div>
+      <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom: editing && available.length ? 10 : 0}}>
+        {assigned.length === 0 && !editing && <span style={{color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:12}}>No tags</span>}
+        {assigned.map(t=>(
+          <span key={t.id} className="us-tag-pill">
+            {t.name}
+            {editing && <span className="us-tag-pill-remove" onClick={()=>removeTag(t.id)}>×</span>}
+          </span>
+        ))}
+      </div>
+      {editing && available.length > 0 && (
+        <div>
+          <div style={{fontSize:10,fontFamily:"'JetBrains Mono',monospace",letterSpacing:"0.12em",color:C.textMuted,textTransform:"uppercase",marginBottom:8}}>Add tag</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {available.map(t=>(
+              <span key={t.id} className="us-tag-available" onClick={()=>addTag(t.id)}>+ {t.name}</span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Conversations Section
+const ConversationsSection = ({ contactId }) => {
+  const [conversations, setConversations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(null);
+  const [messages, setMessages] = useState({});
+  const [loadingMsgs, setLoadingMsgs] = useState({});
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const data = await supaFetch(`/conversations?contact_id=eq.${contactId}&order=last_message_at.desc`);
+        setConversations(data || []);
+      } catch(e) { console.error(e); }
+      setLoading(false);
+    };
+    load();
+  }, [contactId]);
+
+  const toggleConv = async (convId) => {
+    if (expanded === convId) { setExpanded(null); return; }
+    setExpanded(convId);
+    if (messages[convId] !== undefined) return;
+    setLoadingMsgs(prev => ({...prev, [convId]: true}));
+    try {
+      const msgs = await supaFetch(`/messages?conversation_id=eq.${convId}&order=sent_at.asc`);
+      setMessages(prev => ({...prev, [convId]: msgs || []}));
+    } catch(e) { console.error(e); setMessages(prev => ({...prev, [convId]: []})); }
+    setLoadingMsgs(prev => ({...prev, [convId]: false}));
+  };
+
+  const fmtMsgTime = (ts) => {
+    if (!ts) return "—";
+    const d = new Date(ts);
+    const now = new Date();
+    const diffDays = Math.floor((now - d) / 86400000);
+    if (diffDays === 0) return d.toLocaleTimeString("en-US", { hour:"numeric", minute:"2-digit" });
+    if (diffDays < 7) return d.toLocaleDateString("en-US", { weekday:"short", hour:"numeric", minute:"2-digit" });
+    return d.toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
+  };
+
+  if (loading) return (
+    <div style={{display:"flex",alignItems:"center",gap:10,color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:11,padding:"16px 0"}}>
+      <div className="us-spinner" style={{width:14,height:14,borderWidth:1.5}}/>LOADING CONVERSATIONS
+    </div>
+  );
+
+  return (
+    <div>
+      {conversations.length === 0 ? (
+        <div style={{color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:12,padding:"24px 0",textAlign:"center",border:`1px dashed ${C.border}`,borderRadius:4}}>
+          NO CONVERSATIONS YET
+        </div>
+      ) : (
+        <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          {conversations.map(conv => {
+            const isOpen = expanded === conv.id;
+            const convMsgs = messages[conv.id] || [];
+            const isLoadingMsgs = loadingMsgs[conv.id];
+            return (
+              <div key={conv.id} className="us-conv-thread" style={{background:isOpen?"#141414":C.surface,border:`1px solid ${isOpen?"#333":C.border}`,borderRadius:4,overflow:"hidden"}}>
+                <div onClick={()=>toggleConv(conv.id)} style={{padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
+                      {conv.unread && <span style={{width:6,height:6,borderRadius:"50%",background:C.accent,flexShrink:0,display:"inline-block"}}/>}
+                      <span style={{fontWeight:700,fontSize:15,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{conv.subject||"(no subject)"}</span>
+                    </div>
+                    {!isOpen && conv.snippet && (
+                      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",paddingLeft:conv.unread?14:0}}>{conv.snippet}</div>
+                    )}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted}}>{fmtMsgTime(conv.last_message_at)}</span>
+                    <span style={{color:C.textMuted,fontSize:11,display:"inline-block",transform:isOpen?"rotate(180deg)":"rotate(0deg)",transition:"transform .15s"}}>▾</span>
+                  </div>
+                </div>
+
+                {isOpen && (
+                  <div style={{borderTop:`1px solid ${C.border}`,padding:"14px 16px",display:"flex",flexDirection:"column",gap:10}}>
+                    {isLoadingMsgs ? (
+                      <div style={{display:"flex",alignItems:"center",gap:8,color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:11,padding:"6px 0"}}>
+                        <div className="us-spinner" style={{width:12,height:12,borderWidth:1.5}}/>LOADING…
+                      </div>
+                    ) : convMsgs.length === 0 ? (
+                      <div style={{color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:11}}>No messages found.</div>
+                    ) : (
+                      convMsgs.map(msg => {
+                        const isOut = (msg.direction||"").toLowerCase() === "outbound";
+                        return (
+                          <div key={msg.id} style={{display:"flex",flexDirection:"column",alignItems:isOut?"flex-end":"flex-start"}}>
+                            <div style={{
+                              maxWidth:"85%",
+                              background:isOut?"rgba(232,255,71,0.07)":C.elevated,
+                              border:`1px solid ${isOut?"rgba(232,255,71,0.18)":C.border}`,
+                              borderRadius:isOut?"8px 8px 2px 8px":"8px 8px 8px 2px",
+                              padding:"10px 14px",
+                            }}>
+                              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:isOut?C.accent:C.textMuted,marginBottom:7,display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+                                <span style={{letterSpacing:"0.08em"}}>{isOut?"↑ SENT":"↓ RECEIVED"}</span>
+                                {msg.from_email && <span style={{color:"#666"}}>{msg.from_email}</span>}
+                                <span style={{marginLeft:"auto",color:"#555"}}>{fmtMsgTime(msg.sent_at)}</span>
+                              </div>
+                              <div style={{fontSize:14,color:C.text,lineHeight:1.65,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
+                                {msg.body_text||(msg.body_html?"(HTML content — view in email client)":"(no content)")}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Contact Detail
+const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({...contact, subscription_status: (() => {
+    const s = String(contact.subscription_status||contact.subscribed||contact.sub_status||"").toLowerCase();
+    if (s==="true"||s==="active") return "active";
+    if (s==="false") return "unsubscribed";
+    return s;
+  })()});
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const setField = (f,v) => setForm(prev=>({...prev,[f]:v}));
+
+  const displayContact = editing ? form : contact;
+  const name = [displayContact.first_name, displayContact.last_name].filter(Boolean).join(" ") || displayContact.name || "Unknown Contact";
+  const initials = name.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase() || "?";
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const payload = {};
+      ["first_name","last_name","email","cell","landline","company","subscription_status","last_activity_date","notes"].forEach(k => {
+        if (form[k] !== undefined) payload[k] = form[k];
+      });
+      await supaFetch(`/contacts?id=eq.${contact.id}`, { method:"PATCH", body:JSON.stringify(payload) });
+      const data = await supaFetch(`/contacts?id=eq.${contact.id}&select=*,contact_tags(tag_id,tags(id,name)),contact_buckets(bucket_id,buckets(id,name))`);
+      const updated = (data && data[0]) ? data[0] : {...contact,...form};
+      onSave?.(updated);
+      setEditing(false);
+      setToast(true);
+      setTimeout(()=>setToast(false), 2500);
+    } catch(e) { alert("Save failed: " + e.message); }
+    setSaving(false);
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await supaFetch(`/contacts?id=eq.${contact.id}`, { method:"DELETE", headers:{ Prefer:"" } });
+      onDelete(contact.id);
+    } catch(e) {
+      alert("Delete failed: " + e.message);
+      setDeleting(false);
+      setShowConfirm(false);
+    }
+  };
+
+  const handleCancel = () => { setForm({...contact}); setEditing(false); };
+
+  const shown = new Set(["id","first_name","last_name","name","full_name","email","cell","cell_phone","mobile","landline","phone","home_phone","subscription_status","subscribed","sub_status","bucket","bucket_name","last_activity_date","last_activity","last_active","notes","address","city","state","zip","created_at","updated_at","company","tags","contact_tags","contact_buckets"]);
+  const extras = Object.entries(contact).filter(([k])=>!shown.has(k)&&contact[k]!=null&&contact[k]!=="");
+
+  return (
+    <div className="us-detail" style={{maxWidth:860,margin:"0 auto",padding:"32px 24px"}}>
+      {/* Header */}
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:32,gap:16,flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:16,alignItems:"center"}}>
+          <button className="us-btn" onClick={editing ? handleCancel : onBack}>{editing ? "✕ CANCEL" : "← BACK"}</button>
+          <div className="us-avatar">{initials}</div>
+          <div>
+            <div style={{fontSize:32,fontWeight:800,lineHeight:1,color:C.text}}>{name}</div>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+          <div className="us-mono" style={{fontSize:10,color:C.textMuted,letterSpacing:"0.1em",padding:"4px 8px",border:`1px solid ${C.border}`,borderRadius:2}}>
+            ID {String(contact.id).slice(0,8)}…
+          </div>
+          {!editing && (
+            <button className="us-btn us-delete-btn" onClick={()=>setShowConfirm(true)} style={{padding:"8px 14px"}}>✕ DELETE</button>
+          )}
+          {!editing && (
+            <button className="us-btn" onClick={()=>onSendEmail&&onSendEmail(contact)} style={{padding:"8px 14px",borderColor:C.accent,color:C.accent}}>✉ SEND EMAIL</button>
+          )}
+          {!editing && (
+            <button className="us-btn" title="SMS via Twilio — coming in Phase 2" style={{padding:"8px 14px",borderColor:"#888",color:"#888",cursor:"not-allowed",opacity:0.5}}>✉ SEND SMS</button>
+          )}
+          {!editing ? (
+            <button className="us-btn us-edit-contact-btn" onClick={()=>setEditing(true)}>✎ EDIT CONTACT</button>
+          ) : (
+            <button className="us-btn us-save-btn" onClick={handleSave} disabled={saving} style={{padding:"8px 24px"}}>
+              {saving ? "SAVING…" : "✓ SAVE"}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {editing ? (
+        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+          <div className="edit-section">
+            <div className="edit-section-title">Identity</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+              <EField label="First Name" field="first_name" form={form} onChange={setField} placeholder="First name"/>
+              <EField label="Last Name" field="last_name" form={form} onChange={setField} placeholder="Last name"/>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+              <EField label="Email" field="email" form={form} onChange={setField} placeholder="email@example.com"/>
+              <EField label="Company" field="company" form={form} onChange={setField} placeholder="Company name"/>
+            </div>
+          </div>
+          <div className="edit-section">
+            <div className="edit-section-title">Phone Numbers</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+              <EPhoneField label="Cell Phone" field="cell" form={form} onChange={setField}/>
+              <EPhoneField label="Landline Phone" field="landline" form={form} onChange={setField}/>
+            </div>
+          </div>
+          <div className="edit-section">
+            <div className="edit-section-title">CRM Fields</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+              <ESelect label="Subscription Status" field="subscription_status" form={form} onChange={setField} options={["subscribed","unsubscribed","pending","active"]}/>
+              <EDateField label="Last Activity Date" field="last_activity_date" form={form} onChange={setField}/>
+            </div>
+          </div>
+          <div className="edit-section">
+            <div className="edit-section-title">Buckets</div>
+            <BucketsSection contactId={contact.id} editing={true}/>
+          </div>
+          <div className="edit-section">
+            <div className="edit-section-title">Tags</div>
+            <TagsSection contactId={contact.id} editing={true}/>
+          </div>
+          <div className="edit-section">
+            <div className="edit-section-title">Notes</div>
+            <textarea className="us-textarea" value={form.notes||""} onChange={e=>setField("notes",e.target.value)} placeholder="Notes about this contact…"/>
+          </div>
+          <div style={{display:"flex",justifyContent:"flex-end",gap:10,paddingTop:4}}>
+            <button className="us-btn" onClick={handleCancel}>CANCEL</button>
+            <button className="us-btn us-save-btn" onClick={handleSave} disabled={saving} style={{padding:"10px 32px",fontSize:15}}>
+              {saving ? "SAVING…" : "✓ SAVE CONTACT"}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+            <div className="us-field-card" style={{padding:"14px 16px"}}>
+              <div className="us-section-label">Email</div>
+              <div className="us-mono" style={{fontSize:14,color:C.text}}>{contact.email||"—"}</div>
+            </div>
+            <div className="us-field-card" style={{padding:"14px 16px"}}>
+              <div className="us-section-label">Buckets</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                {(contact.contact_buckets||[]).length > 0
+                  ? (contact.contact_buckets||[]).map(cb=>cb.buckets ? <span key={cb.bucket_id} className="us-tag" style={{fontSize:14}}>{cb.buckets.name}</span> : null)
+                  : <span style={{fontSize:14,color:C.textMuted}}>—</span>}
+              </div>
+            </div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+            <PhoneField label="Cell Phone" value={contact.cell||contact.cell_phone||contact.mobile}/>
+            <PhoneField label="Landline Phone" value={contact.landline||contact.phone||contact.home_phone}/>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+            <SubBadge value={contact.subscription_status||contact.subscribed||contact.sub_status}/>
+            <div className="us-field-card" style={{padding:"14px 16px"}}>
+              <div className="us-section-label">Last Activity</div>
+              <div className="us-mono" style={{fontSize:14,color:C.text}}>{fmt.date(contact.last_activity_date||contact.last_activity||contact.last_active)}</div>
+            </div>
+          </div>
+
+          {/* Tags */}
+          <div className="us-field-card" style={{padding:"14px 16px",marginBottom:10}}>
+            <div className="us-section-label">Tags</div>
+            <TagsSection contactId={contact.id} editing={false}/>
+          </div>
+
+          {extras.length > 0 && (
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+              {extras.map(([k,v])=>(<div key={k} className="us-field-card" style={{padding:"14px 16px"}}><div className="us-section-label">{k.replace(/_/g," ")}</div><div style={{fontSize:15,fontWeight:600,color:C.text}}>{typeof v==="boolean"?(v?"Yes":"No"):fmt.val(v)}</div></div>))}
+            </div>
+          )}
+
+          <hr className="us-divider"/>
+
+          <div style={{marginBottom:24}}>
+            <div className="us-section-label" style={{marginBottom:10}}>Notes</div>
+            <div className="us-field-card" style={{padding:"14px 16px",minHeight:80}}>
+              <div className="us-mono" style={{fontSize:13,color:contact.notes?C.text:C.textMuted,lineHeight:1.7,whiteSpace:"pre-wrap",wordBreak:"break-word"}}>
+                {contact.notes||"No notes — click ✎ EDIT CONTACT to add"}
+              </div>
+            </div>
+          </div>
+
+          <hr className="us-divider"/>
+
+          <div style={{marginBottom:24}}>
+            <div className="us-section-label" style={{marginBottom:12}}>Conversations</div>
+            <ConversationsSection contactId={contact.id}/>
+          </div>
+
+          {(contact.created_at||contact.updated_at) && (
+            <div style={{display:"flex",gap:24,paddingTop:12,borderTop:`1px solid ${C.border}`}}>
+              {contact.created_at&&<div><div className="us-section-label" style={{marginBottom:4}}>Created</div><div className="us-mono" style={{fontSize:12,color:C.textMuted}}>{fmt.date(contact.created_at)}</div></div>}
+              {contact.updated_at&&<div><div className="us-section-label" style={{marginBottom:4}}>Last Updated</div><div className="us-mono" style={{fontSize:12,color:C.textMuted}}>{fmt.date(contact.updated_at)}</div></div>}
+            </div>
+          )}
+        </>
+      )}
+
+      {showConfirm && <ConfirmModal name={name} onConfirm={handleDelete} onCancel={()=>setShowConfirm(false)} loading={deleting}/>}
+      {toast && <div className="us-toast">✓ CONTACT SAVED</div>}
+    </div>
+  );
+};
+
+// ── New Contact Form
+const EMPTY_CONTACT = { first_name:"", last_name:"", email:"", company:"", cell:"", landline:"", subscription_status:"", last_activity_date:"", notes:"" };
+
+const NewContactForm = ({ onBack, onCreated }) => {
+  const [form, setForm] = useState({...EMPTY_CONTACT});
+  const [saving, setSaving] = useState(false);
+  const [allTags, setAllTags] = useState([]);
+  const [selectedTagIds, setSelectedTagIds] = useState([]);
+  const [allBuckets, setAllBuckets] = useState([]);
+  const [selectedBucketIds, setSelectedBucketIds] = useState([]);
+  const [showNewBucket, setShowNewBucket] = useState(false);
+  const [newBucketName, setNewBucketName] = useState("");
+  const setField = (f,v) => setForm(prev=>({...prev,[f]:v}));
+
+  useEffect(() => {
+    Promise.all([
+      supaFetch("/tags?order=name.asc"),
+      supaFetch("/buckets?order=name.asc"),
+    ]).then(([t,b]) => { setAllTags(t||[]); setAllBuckets(b||[]); }).catch(()=>{});
+  }, []);
+
+  const toggleTag = (id) => setSelectedTagIds(prev => prev.includes(id) ? prev.filter(i=>i!==id) : [...prev, id]);
+  const toggleBucket = (id) => setSelectedBucketIds(prev => prev.includes(id) ? prev.filter(i=>i!==id) : [...prev, id]);
+
+  const createNewBucket = async () => {
+    const name = newBucketName.trim();
+    if (!name) return;
+    try {
+      const result = await supaFetch("/buckets", { method:"POST", body:JSON.stringify({ name }) });
+      const created = Array.isArray(result) ? result[0] : result;
+      setAllBuckets(prev => [...prev, created].sort((a,b)=>a.name.localeCompare(b.name)));
+      setSelectedBucketIds(prev => [...prev, created.id]);
+      setNewBucketName(""); setShowNewBucket(false);
+    } catch(e) { alert("Failed to create bucket: "+e.message); }
+  };
+
+  const handleSave = async () => {
+    if (!form.first_name && !form.last_name) { alert("First or last name is required."); return; }
+    setSaving(true);
+    try {
+      const payload = {...form};
+      Object.keys(payload).forEach(k => { if (payload[k]==="") delete payload[k]; });
+      const result = await supaFetch("/contacts", { method:"POST", body:JSON.stringify(payload) });
+      const newContact = Array.isArray(result) ? result[0] : result;
+      if (selectedTagIds.length > 0) {
+        await Promise.all(selectedTagIds.map(tag_id =>
+          supaFetch("/contact_tags", { method:"POST", body:JSON.stringify({ contact_id: newContact.id, tag_id }) })
+        ));
+      }
+      if (selectedBucketIds.length > 0) {
+        await Promise.all(selectedBucketIds.map(bucket_id =>
+          supaFetch("/contact_buckets", { method:"POST", body:JSON.stringify({ contact_id: newContact.id, bucket_id }) })
+        ));
+      }
+      onCreated(newContact);
+    } catch(e) { alert("Failed to create contact: " + e.message); }
+    setSaving(false);
+  };
+
+  const name = [form.first_name, form.last_name].filter(Boolean).join(" ") || "New Contact";
+  const initials = name === "New Contact" ? "+" : name.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase();
+
+  return (
+    <div className="us-detail" style={{maxWidth:860,margin:"0 auto",padding:"32px 24px"}}>
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:32,gap:16,flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:16,alignItems:"center"}}>
+          <button className="us-btn" onClick={onBack}>✕ CANCEL</button>
+          <div className="us-avatar" style={{color: form.first_name||form.last_name ? C.accent : C.textMuted}}>{initials}</div>
+          <div>
+            <div style={{fontSize:32,fontWeight:800,lineHeight:1,color: form.first_name||form.last_name ? C.text : C.textMuted}}>{name}</div>
+            <div className="us-mono" style={{fontSize:12,color:C.textMuted,marginTop:4,letterSpacing:"0.1em"}}>NEW CONTACT</div>
+          </div>
+        </div>
+        <button className="us-btn us-save-btn" onClick={handleSave} disabled={saving} style={{padding:"8px 24px"}}>
+          {saving ? "SAVING…" : "✓ SAVE"}
+        </button>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:14}}>
+        <div className="edit-section">
+          <div className="edit-section-title">Identity</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            <EField label="First Name" field="first_name" form={form} onChange={setField} placeholder="First name"/>
+            <EField label="Last Name" field="last_name" form={form} onChange={setField} placeholder="Last name"/>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            <EField label="Email" field="email" form={form} onChange={setField} placeholder="email@example.com"/>
+            <EField label="Company" field="company" form={form} onChange={setField} placeholder="Company name"/>
+          </div>
+        </div>
+        <div className="edit-section">
+          <div className="edit-section-title">Phone Numbers</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            <EPhoneField label="Cell Phone" field="cell" form={form} onChange={setField}/>
+            <EPhoneField label="Landline Phone" field="landline" form={form} onChange={setField}/>
+          </div>
+        </div>
+        <div className="edit-section">
+          <div className="edit-section-title">CRM Fields</div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            <ESelect label="Subscription Status" field="subscription_status" form={form} onChange={setField} options={["subscribed","unsubscribed","pending","active"]}/>
+            <EDateField label="Last Activity Date" field="last_activity_date" form={form} onChange={setField}/>
+          </div>
+        </div>
+        <div className="edit-section">
+          <div className="edit-section-title">Buckets</div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:8,marginBottom:8}}>
+            {allBuckets.filter(b=>selectedBucketIds.includes(b.id)).map(b=>(
+              <span key={b.id} className="us-tag-pill" onClick={()=>toggleBucket(b.id)} style={{cursor:"pointer"}}>
+                {b.name} <span className="us-tag-pill-remove">×</span>
+              </span>
+            ))}
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
+            {allBuckets.filter(b=>!selectedBucketIds.includes(b.id)).map(b=>(
+              <span key={b.id} className="us-tag-available" onClick={()=>toggleBucket(b.id)}>+ {b.name}</span>
+            ))}
+          </div>
+          {showNewBucket ? (
+            <div style={{display:"flex",gap:6,marginTop:4}}>
+              <input className="us-input" value={newBucketName} onChange={e=>setNewBucketName(e.target.value)}
+                onKeyDown={e=>{if(e.key==="Enter")createNewBucket();if(e.key==="Escape"){setShowNewBucket(false);setNewBucketName("");}}}
+                placeholder="New bucket name…" style={{fontSize:13,padding:"6px 10px"}} autoFocus/>
+              <button className="us-btn us-save-btn" onClick={createNewBucket} disabled={!newBucketName.trim()} style={{padding:"6px 14px",fontSize:12}}>ADD</button>
+              <button className="us-btn" onClick={()=>{setShowNewBucket(false);setNewBucketName("");}} style={{padding:"6px 10px",fontSize:12}}>✕</button>
+            </div>
+          ) : (
+            <span className="us-tag-available" onClick={()=>setShowNewBucket(true)} style={{marginTop:4,display:"inline-flex"}}>+ New bucket type</span>
+          )}
+        </div>
+        <div className="edit-section">
+          <div className="edit-section-title">Tags</div>
+          {allTags.length === 0 ? (
+            <div style={{color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:11}}>No tags available</div>
+          ) : (
+            <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+              {allTags.map(t => selectedTagIds.includes(t.id) ? (
+                <span key={t.id} className="us-tag-pill" onClick={()=>toggleTag(t.id)} style={{cursor:"pointer"}}>
+                  {t.name} <span className="us-tag-pill-remove">×</span>
+                </span>
+              ) : (
+                <span key={t.id} className="us-tag-available" onClick={()=>toggleTag(t.id)}>+ {t.name}</span>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="edit-section">
+          <div className="edit-section-title">Notes</div>
+          <textarea className="us-textarea" value={form.notes||""} onChange={e=>setField("notes",e.target.value)} placeholder="Notes about this contact…"/>
+        </div>
+        <div style={{display:"flex",justifyContent:"flex-end",gap:10,paddingTop:4}}>
+          <button className="us-btn" onClick={onBack}>CANCEL</button>
+          <button className="us-btn us-save-btn" onClick={handleSave} disabled={saving} style={{padding:"10px 32px",fontSize:15}}>
+            {saving ? "SAVING…" : "✓ CREATE CONTACT"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Column definitions
+const ALL_COLUMNS = [
+  { key:"name",          label:"Name",          always:true },
+  { key:"email",         label:"Email",         always:false },
+  { key:"cell",          label:"Cell Phone",    always:false },
+  { key:"bucket",        label:"Bucket",        always:false },
+  { key:"status",        label:"Status",        always:false },
+  { key:"last_activity", label:"Last Activity", always:false },
+  { key:"tags",          label:"Tags",          always:false },
+];
+const DEFAULT_VISIBLE = ["name","email","cell","bucket","status","last_activity","tags"];
+
+// ── Contacts Table
+const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
+  const [search, setSearch] = useState("");
+  const [showColSettings, setShowColSettings] = useState(false);
+  const [colOrder, setColOrder] = useState(() => {
+    try { const s = localStorage.getItem("us_col_order"); return s ? JSON.parse(s) : ALL_COLUMNS.map(c=>c.key); } catch { return ALL_COLUMNS.map(c=>c.key); }
+  });
+  const [visibleCols, setVisibleCols] = useState(() => {
+    try { const s = localStorage.getItem("us_cols"); return s ? JSON.parse(s) : DEFAULT_VISIBLE; } catch { return DEFAULT_VISIBLE; }
+  });
+  const settingsRef = useRef(null);
+  const dragKey = useRef(null);
+  const dragOverKey = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (settingsRef.current && !settingsRef.current.contains(e.target)) setShowColSettings(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const toggleCol = (key) => {
+    const next = visibleCols.includes(key) ? visibleCols.filter(k=>k!==key) : [...visibleCols, key];
+    setVisibleCols(next);
+    try { localStorage.setItem("us_cols", JSON.stringify(next)); } catch {}
+  };
+
+  const onDragStart = (key) => { dragKey.current = key; };
+  const onDragOver = (e, key) => { e.preventDefault(); dragOverKey.current = key; };
+  const onDrop = () => {
+    if (!dragKey.current || dragKey.current === dragOverKey.current) return;
+    const next = [...colOrder];
+    const from = next.indexOf(dragKey.current);
+    const to = next.indexOf(dragOverKey.current);
+    next.splice(from, 1);
+    next.splice(to, 0, dragKey.current);
+    setColOrder(next);
+    try { localStorage.setItem("us_col_order", JSON.stringify(next)); } catch {}
+    dragKey.current = null; dragOverKey.current = null;
+  };
+
+  const [sortKey, setSortKey] = useState("name");
+  const [sortDir, setSortDir] = useState("asc");
+  const [showFilters, setShowFilters] = useState(false);
+  const [filterBuckets, setFilterBuckets] = useState([]);
+  const [filterTags, setFilterTags] = useState([]);
+  const [filterStatus, setFilterStatus] = useState([]);
+  const filterRef = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (filterRef.current && !filterRef.current.contains(e.target)) setShowFilters(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleSort = (key) => {
+    if (key === "tags") return;
+    if (sortKey === key) { setSortDir(d => d === "asc" ? "desc" : "asc"); }
+    else { setSortKey(key); setSortDir("asc"); }
+  };
+
+  const getSortVal = (c, key) => {
+    switch(key) {
+      case "name": return ([c.first_name,c.last_name].filter(Boolean).join(" ")||c.name||"").toLowerCase();
+      case "email": return (c.email||"").toLowerCase();
+      case "cell": return (c.cell||c.mobile||c.cell_phone||"").replace(/\D/g,"");
+      case "bucket": return ((c.contact_buckets||[]).map(cb=>cb.buckets?.name).filter(Boolean).join(",")).toLowerCase();
+      case "status": return (c.subscription_status||c.subscribed||c.sub_status||"").toLowerCase();
+      case "last_activity": return c.last_activity_date||c.last_activity||c.last_active||"";
+      default: return "";
+    }
+  };
+
+  // Derive available tag names from contacts
+  const allTagNames = [...new Set(contacts.flatMap(c => (c.contact_tags||[]).map(ct => ct.tags?.name).filter(Boolean)))].sort();
+  const allBucketNames = [...new Set(contacts.flatMap(c => (c.contact_buckets||[]).map(cb => cb.buckets?.name).filter(Boolean)))].sort();
+  const allStatuses = [...new Set(contacts.map(c => c.subscription_status||c.subscribed||c.sub_status).filter(Boolean))].sort();
+
+  const toggleFilter = (arr, setArr, val) => setArr(prev => prev.includes(val) ? prev.filter(v=>v!==val) : [...prev, val]);
+  const clearAllFilters = () => { setFilterBuckets([]); setFilterTags([]); setFilterStatus([]); };
+  const activeFilterCount = filterBuckets.length + filterTags.length + filterStatus.length;
+
+  // ── Bulk selection
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkAction, setBulkAction] = useState(null);
+  const [bulkWorking, setBulkWorking] = useState(false);
+  const [bulkTagIds, setBulkTagIds] = useState([]);
+  const [bulkBuckets, setBulkBuckets] = useState([]);
+  const [allTags, setAllTags] = useState([]);
+  const [allBucketsForBulk, setAllBucketsForBulk] = useState([]);
+
+  useEffect(() => {
+    supaFetch("/tags?order=name.asc").then(t => setAllTags(t||[])).catch(()=>{});
+    supaFetch("/buckets?order=name.asc").then(b => setAllBucketsForBulk(b||[])).catch(()=>{});
+  }, []);
+
+  const toggleSelect = (e, id) => {
+    e.stopPropagation();
+    setSelectedIds(prev => prev.includes(id) ? prev.filter(x=>x!==id) : [...prev, id]);
+  };
+  const toggleSelectAll = () => {
+    const allIds = filtered.map(c=>c.id);
+    const allChecked = allIds.length > 0 && allIds.every(id=>selectedIds.includes(id));
+    setSelectedIds(allChecked ? [] : allIds);
+  };
+  const clearSelection = () => { setSelectedIds([]); setBulkAction(null); };
+
+  const handleBulkTags = async () => {
+    if (bulkTagIds.length === 0) return;
+    setBulkWorking(true);
+    try {
+      await Promise.all(selectedIds.flatMap(contactId =>
+        bulkTagIds.map(tagId =>
+          supaFetch("/contact_tags", { method:"POST", body:JSON.stringify({ contact_id:contactId, tag_id:tagId }) })
+            .catch(()=>{})
+        )
+      ));
+      setBulkAction(null); setBulkTagIds([]); clearSelection();
+      window.__bulkRefresh && window.__bulkRefresh();
+    } catch(e) { alert("Bulk tag failed: "+e.message); }
+    setBulkWorking(false);
+  };
+
+  const handleBulkBuckets = async () => {
+    if (bulkBuckets.length === 0) return;
+    setBulkWorking(true);
+    try {
+      await Promise.all(selectedIds.flatMap(contactId =>
+        bulkBuckets.map(bucketId =>
+          supaFetch("/contact_buckets", { method:"POST", body:JSON.stringify({ contact_id:contactId, bucket_id:bucketId }) })
+            .catch(()=>{})
+        )
+      ));
+      setBulkAction(null); setBulkBuckets([]); clearSelection();
+      window.__bulkRefresh && window.__bulkRefresh();
+    } catch(e) { alert("Bulk bucket failed: "+e.message); }
+    setBulkWorking(false);
+  };
+
+  const handleBulkDelete = async () => {
+    setBulkWorking(true);
+    try {
+      await Promise.all(selectedIds.map(id =>
+        supaFetch(`/contacts?id=eq.${id}`, { method:"DELETE", headers:{ Prefer:"" } })
+      ));
+      setBulkAction(null); clearSelection();
+      window.__bulkRefresh && window.__bulkRefresh();
+    } catch(e) { alert("Bulk delete failed: "+e.message); }
+    setBulkWorking(false);
+  };
+
+  const filtered = contacts.filter(c => {
+    const q = search.toLowerCase();
+    const name = [c.first_name,c.last_name,c.name,c.full_name].filter(Boolean).join(" ").toLowerCase();
+    if (!(name.includes(q)||(c.email||"").toLowerCase().includes(q)||(c.contact_buckets||[]).some(cb=>(cb.buckets?.name||"").toLowerCase().includes(q))||(c.cell||c.mobile||"").includes(q))) return false;
+    if (filterBuckets.length > 0) {
+      const cBucketNames = (c.contact_buckets||[]).map(cb=>cb.buckets?.name).filter(Boolean);
+      if (!filterBuckets.every(b => cBucketNames.includes(b))) return false;
+    }
+    if (filterTags.length > 0) {
+      const cTagNames = (c.contact_tags||[]).map(ct=>ct.tags?.name).filter(Boolean);
+      if (!filterTags.every(t => cTagNames.includes(t))) return false;
+    }
+    if (filterStatus.length > 0) {
+      const cStatus = String(c.subscription_status||c.subscribed||c.sub_status||"").toLowerCase();
+      if (!filterStatus.includes(cStatus)) return false;
+    }
+    return true;
+  }).sort((a, b) => {
+    const av = getSortVal(a, sortKey);
+    const bv = getSortVal(b, sortKey);
+    const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+    return sortDir === "asc" ? cmp : -cmp;
+  });
+
+  const allSelected = filtered.length > 0 && filtered.every(c=>selectedIds.includes(c.id));
+  const someSelected = selectedIds.length > 0;
+
+  const orderedCols = colOrder.map(k => ALL_COLUMNS.find(c=>c.key===k)).filter(Boolean);
+  const visibleOrdered = orderedCols.filter(c => visibleCols.includes(c.key));
+
+  const renderCell = (c, key) => {
+    const name = [c.first_name,c.last_name].filter(Boolean).join(" ")||c.name||c.full_name||"—";
+    const subStatus = c.subscription_status||c.subscribed||c.sub_status;
+    const color = subColor(subStatus);
+    switch(key) {
+      case "name": return <td key={key} style={{fontWeight:700,fontSize:15,color:C.text}}>{name}</td>;
+      case "email": return <td key={key} className="us-mono" style={{fontSize:13,color:C.textSub}}>{c.email||"—"}</td>;
+      case "cell": return <td key={key} className="us-mono" style={{fontSize:13,color:C.text}}>{fmt.phone(c.cell||c.mobile||c.cell_phone)}</td>;
+      case "bucket": return <td key={key}><div style={{display:"flex",flexWrap:"wrap",gap:4}}>{(c.contact_buckets||[]).length>0?(c.contact_buckets||[]).map(cb=>cb.buckets?<span key={cb.bucket_id} className="us-tag">{cb.buckets.name}</span>:null):<span style={{color:C.textMuted}}>—</span>}</div></td>;
+      case "status": return <td key={key}><span style={{display:"flex",alignItems:"center",gap:6}}><span style={{width:6,height:6,borderRadius:"50%",background:color,display:"inline-block",flexShrink:0}}/><span className="us-mono" style={{fontSize:11,color,letterSpacing:"0.06em"}}>{subStatus!=null?String(subStatus).toUpperCase():"—"}</span></span></td>;
+      case "last_activity": return <td key={key} className="us-mono" style={{fontSize:13,color:C.textSub}}>{fmt.date(c.last_activity_date||c.last_activity||c.last_active)}</td>;
+      case "tags": return <td key={key}><div style={{display:"flex",flexWrap:"wrap",gap:4}}>{(c.contact_tags||[]).map(ct=>ct.tags?<span key={ct.tag_id} className="us-tag-pill" style={{fontSize:10,padding:"2px 7px"}}>{ct.tags.name}</span>:null)}{(!c.contact_tags||c.contact_tags.length===0)&&<span style={{color:C.textMuted,fontSize:12}}>—</span>}</div></td>;
+      default: return null;
+    }
+  };
+
+  return (
+    <div style={{padding:"32px 24px"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,gap:12,flexWrap:"wrap"}}>
+        <div>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.2em",color:C.accent,textTransform:"uppercase",marginBottom:6}}>Urban Street / CRM</div>
+          <h1 style={{fontSize:36,fontWeight:900,lineHeight:1,letterSpacing:"-0.02em",color:C.text}}>CONTACTS</h1>
+        </div>
+        <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+          <div className="us-mono" style={{fontSize:12,color:C.textMuted}}>{filtered.length} / {contacts.length}</div>
+          {/* Filter button */}
+          <div style={{position:"relative"}} ref={filterRef}>
+            <button className="us-btn" onClick={()=>setShowFilters(v=>!v)} style={{padding:"8px 12px",fontSize:12,borderColor: activeFilterCount>0?C.accent:"#252525",color: activeFilterCount>0?C.accent:"#888"}}>
+              ⊟ FILTER{activeFilterCount>0?` (${activeFilterCount})`:""}
+            </button>
+            {showFilters && (
+              <div className="us-settings-panel" style={{minWidth:280}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.16em",color:C.accent,textTransform:"uppercase"}}>Filters</div>
+                  {activeFilterCount>0 && <span onClick={clearAllFilters} style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.red,cursor:"pointer",letterSpacing:"0.08em",textTransform:"uppercase"}}>Clear all</span>}
+                </div>
+                {/* Bucket filter */}
+                {allBucketNames.length > 0 && (
+                <div style={{marginBottom:14}}>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Bucket</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                    {allBucketNames.map(b=>(
+                      <span key={b} onClick={()=>toggleFilter(filterBuckets,setFilterBuckets,b)}
+                        style={{display:"inline-flex",alignItems:"center",padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterBuckets.includes(b)?C.accent:"#333"}`,background:filterBuckets.includes(b)?"rgba(232,255,71,0.1)":"transparent",color:filterBuckets.includes(b)?C.accent:"#888",transition:"all .12s"}}>
+                        {filterBuckets.includes(b)?"✓ ":""}{b}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                )}
+                {/* Tag filter */}
+                {allTagNames.length > 0 && (
+                  <div style={{marginBottom:14}}>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Tag</div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                      {allTagNames.map(t=>(
+                        <span key={t} onClick={()=>toggleFilter(filterTags,setFilterTags,t)}
+                          style={{display:"inline-flex",alignItems:"center",padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterTags.includes(t)?C.accent:"#333"}`,background:filterTags.includes(t)?"rgba(232,255,71,0.1)":"transparent",color:filterTags.includes(t)?C.accent:"#888",transition:"all .12s"}}>
+                          {filterTags.includes(t)?"✓ ":""}{t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Status filter */}
+                {allStatuses.length > 0 && (
+                  <div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Status</div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                      {allStatuses.map(s=>(
+                        <span key={s} onClick={()=>toggleFilter(filterStatus,setFilterStatus,s)}
+                          style={{display:"inline-flex",alignItems:"center",padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterStatus.includes(s)?C.accent:"#333"}`,background:filterStatus.includes(s)?"rgba(232,255,71,0.1)":"transparent",color:filterStatus.includes(s)?C.accent:"#888",transition:"all .12s"}}>
+                          {filterStatus.includes(s)?"✓ ":""}{s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <div style={{position:"relative"}} ref={settingsRef}>
+            <button className="us-btn" onClick={()=>setShowColSettings(v=>!v)} style={{padding:"8px 12px",fontSize:12}}>⚙ COLUMNS</button>
+            {showColSettings && (
+              <div className="us-settings-panel">
+                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.16em",color:C.accent,textTransform:"uppercase",marginBottom:4}}>Columns</div>
+                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,marginBottom:12}}>Toggle · Drag to reorder</div>
+                {orderedCols.map(col=>(
+                  <div
+                    key={col.key}
+                    className="us-col-toggle"
+                    draggable={!col.always}
+                    onDragStart={()=>onDragStart(col.key)}
+                    onDragOver={e=>onDragOver(e,col.key)}
+                    onDrop={onDrop}
+                    onClick={()=>!col.always&&toggleCol(col.key)}
+                    style={{cursor: col.always ? "default" : "grab"}}
+                  >
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      {!col.always && <span style={{color:"#444",fontSize:12,lineHeight:1}}>⠿</span>}
+                      {col.always && <span style={{width:16}}/>}
+                      <span className="us-col-toggle-label" style={{color: visibleCols.includes(col.key) ? C.text : "#555"}}>{col.label}</span>
+                    </div>
+                    <div className={`us-switch${visibleCols.includes(col.key)?" on":""}`} style={{opacity: col.always ? 0.4 : 1}}/>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <button className="us-btn us-edit-contact-btn" onClick={onNew} style={{whiteSpace:"nowrap"}}>+ NEW CONTACT</button>
+          <input className="us-search" placeholder="Search contacts…" value={search} onChange={e=>setSearch(e.target.value)}/>
+        </div>
+      </div>
+      {/* Active filter pills */}
+      {activeFilterCount > 0 && (
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:16,alignItems:"center"}}>
+          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.1em",textTransform:"uppercase",marginRight:2}}>Filters:</span>
+          {filterBuckets.map(b=>(
+            <span key={b} className="us-tag-pill" style={{fontSize:11}} onClick={()=>toggleFilter(filterBuckets,setFilterBuckets,b)}>
+              bucket: {b} <span className="us-tag-pill-remove">×</span>
+            </span>
+          ))}
+          {filterTags.map(t=>(
+            <span key={t} className="us-tag-pill" style={{fontSize:11}} onClick={()=>toggleFilter(filterTags,setFilterTags,t)}>
+              tag: {t} <span className="us-tag-pill-remove">×</span>
+            </span>
+          ))}
+          {filterStatus.map(s=>(
+            <span key={s} className="us-tag-pill" style={{fontSize:11}} onClick={()=>toggleFilter(filterStatus,setFilterStatus,s)}>
+              status: {s} <span className="us-tag-pill-remove">×</span>
+            </span>
+          ))}
+          <span onClick={clearAllFilters} style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.red,cursor:"pointer",letterSpacing:"0.06em",textTransform:"uppercase",marginLeft:4}}>Clear all</span>
+        </div>
+      )}
+      {/* Bulk action bar */}
+      {someSelected && (
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12,padding:"10px 14px",background:"#141414",border:`1px solid ${C.accent}33`,borderRadius:4,flexWrap:"wrap"}}>
+          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.accent,fontWeight:700,letterSpacing:"0.08em"}}>{selectedIds.length} SELECTED{allSelected && filtered.length > 1 ? ` (ALL ${filtered.length})` : ""}</span>
+          <button className="us-btn" onClick={()=>setBulkAction('tag')} style={{padding:"6px 12px",fontSize:12}}>+ ASSIGN TAGS</button>
+          <button className="us-btn" onClick={()=>setBulkAction('bucket')} style={{padding:"6px 12px",fontSize:12}}>⊞ ASSIGN BUCKETS</button>
+          <button className="us-btn us-delete-btn" onClick={()=>setBulkAction('delete')} style={{padding:"6px 12px",fontSize:12}}>✕ DELETE</button>
+          <button className="us-btn us-save-btn" onClick={()=>onBulkSend&&onBulkSend(contacts.filter(c=>selectedIds.includes(c.id)))} style={{padding:"6px 12px",fontSize:12}}>✉ {selectedIds.length===1?"SEND EMAIL":"BULK SEND"}</button>
+          <button className="us-btn" onClick={clearSelection} style={{padding:"6px 12px",fontSize:12,marginLeft:"auto"}}>CANCEL</button>
+        </div>
+      )}
+      <div className="us-table-wrap">
+        <table className="us-table">
+          <thead>
+            <tr>
+              <th style={{width:36,padding:"10px 8px 10px 12px"}} onClick={toggleSelectAll}>
+                <div style={{width:16,height:16,border:`1.5px solid ${allSelected?C.accent:"#444"}`,borderRadius:2,background:allSelected?C.accent:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  {allSelected && <span style={{color:"#000",fontSize:10,fontWeight:900,lineHeight:1}}>✓</span>}
+                  {!allSelected && selectedIds.length>0 && <span style={{color:C.accent,fontSize:10,lineHeight:1}}>—</span>}
+                </div>
+              </th>
+              {visibleOrdered.map(col => {
+                const sortable = col.key !== "tags";
+                const active = sortKey === col.key;
+                return (
+                  <th key={col.key}
+                    onClick={() => sortable && handleSort(col.key)}
+                    style={{cursor: sortable ? "pointer" : "default", userSelect:"none", whiteSpace:"nowrap"}}
+                  >
+                    <span style={{display:"inline-flex",alignItems:"center",gap:5}}>
+                      {col.label}
+                      {sortable && (
+                        <span style={{fontSize:8,opacity: active ? 1 : 0.3, color: active ? C.accent : C.textSub, lineHeight:1}}>
+                          {active ? (sortDir === "asc" ? "▲" : "▼") : "⬍"}
+                        </span>
+                      )}
+                    </span>
+                  </th>
+                );
+              })}
+              <th style={{width:32}}/>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(c => {
+              const isChecked = selectedIds.includes(c.id);
+              return (
+                <tr key={c.id} onClick={()=>onSelect(c)} style={{background: isChecked?"rgba(232,255,71,0.04)":""}}>
+                  <td style={{padding:"10px 8px 10px 12px"}} onClick={e=>toggleSelect(e,c.id)}>
+                    <div style={{width:16,height:16,border:`1.5px solid ${isChecked?C.accent:"#444"}`,borderRadius:2,background:isChecked?C.accent:"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                      {isChecked && <span style={{color:"#000",fontSize:10,fontWeight:900,lineHeight:1}}>✓</span>}
+                    </div>
+                  </td>
+                  {visibleOrdered.map(col=>renderCell(c, col.key))}
+                  <td><span className="us-row-arrow" style={{fontSize:14}}>→</span></td>
+                </tr>
+              );
+            })}
+            {filtered.length===0&&(
+              <tr><td colSpan={visibleOrdered.length+2} style={{textAlign:"center",padding:40,color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:12}}>NO CONTACTS FOUND</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Bulk Tag Modal */}
+      {bulkAction==='tag' && (
+        <div className="us-modal-overlay">
+          <div className="us-modal" style={{maxWidth:480,textAlign:"left"}}>
+            <div style={{fontSize:16,fontWeight:700,color:C.accent,marginBottom:4,letterSpacing:"0.04em"}}>ASSIGN TAGS</div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted,marginBottom:20}}>Applies to {selectedIds.length} contact{selectedIds.length!==1?"s":""}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:24}}>
+              {allTags.map(t => bulkTagIds.includes(t.id) ? (
+                <span key={t.id} className="us-tag-pill" onClick={()=>setBulkTagIds(p=>p.filter(i=>i!==t.id))} style={{cursor:"pointer"}}>
+                  {t.name} <span className="us-tag-pill-remove">×</span>
+                </span>
+              ) : (
+                <span key={t.id} className="us-tag-available" onClick={()=>setBulkTagIds(p=>[...p,t.id])}>+ {t.name}</span>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+              <button className="us-btn" onClick={()=>{setBulkAction(null);setBulkTagIds([]);}} disabled={bulkWorking}>CANCEL</button>
+              <button className="us-btn us-save-btn" onClick={handleBulkTags} disabled={bulkWorking||bulkTagIds.length===0}>
+                {bulkWorking?"SAVING…":"✓ APPLY TAGS"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Bucket Modal */}
+      {bulkAction==='bucket' && (
+        <div className="us-modal-overlay">
+          <div className="us-modal" style={{maxWidth:480,textAlign:"left"}}>
+            <div style={{fontSize:16,fontWeight:700,color:C.accent,marginBottom:4,letterSpacing:"0.04em"}}>ASSIGN BUCKETS</div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted,marginBottom:20}}>Adds buckets to {selectedIds.length} contact{selectedIds.length!==1?"s":""}</div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:7,marginBottom:24}}>
+              {allTags.length === 0 && <div style={{color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:11}}>Loading…</div>}
+              {allBucketsForBulk.map(b => bulkBuckets.includes(b.id) ? (
+                <span key={b.id} className="us-tag-pill" onClick={()=>setBulkBuckets(p=>p.filter(x=>x!==b.id))} style={{cursor:"pointer"}}>
+                  {b.name} <span className="us-tag-pill-remove">×</span>
+                </span>
+              ) : (
+                <span key={b.id} className="us-tag-available" onClick={()=>setBulkBuckets(p=>[...p,b.id])}>+ {b.name}</span>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:10,justifyContent:"flex-end"}}>
+              <button className="us-btn" onClick={()=>{setBulkAction(null);setBulkBuckets([]);}} disabled={bulkWorking}>CANCEL</button>
+              <button className="us-btn us-save-btn" onClick={handleBulkBuckets} disabled={bulkWorking||bulkBuckets.length===0}>
+                {bulkWorking?"SAVING…":"✓ APPLY BUCKETS"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Delete Modal */}
+      {bulkAction==='delete' && (
+        <div className="us-modal-overlay">
+          <div className="us-modal">
+            <div style={{fontSize:18,fontWeight:700,color:C.red,marginBottom:8,letterSpacing:"0.02em"}}>DELETE CONTACTS</div>
+            <div style={{fontSize:15,color:C.textSub,marginBottom:24,lineHeight:1.5}}>
+              Permanently delete <span style={{color:C.text,fontWeight:700}}>{selectedIds.length} contact{selectedIds.length!==1?"s":""}</span>? This cannot be undone.
+            </div>
+            <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+              <button className="us-btn" onClick={()=>setBulkAction(null)} disabled={bulkWorking}>CANCEL</button>
+              <button className="us-btn us-delete-btn" onClick={handleBulkDelete} disabled={bulkWorking} style={{background:"rgba(255,68,68,.1)"}}>
+                {bulkWorking?"DELETING…":`✕ DELETE ${selectedIds.length}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── Settings Page
+// ── Signature Builder
+const EMPTY_SIG = { name:"", style:"Urban Street", full_name:"", title:"", company:"", email:"", phone:"", website:"", tagline:"", accent_color:"#e8622a", show_logo:false, is_default:false };
+
+const buildSigHtml = (s) => {
+  const color = s.accent_color || "#e8622a";
+  return `<table cellpadding="0" cellspacing="0" style="font-family:Arial,sans-serif;font-size:14px;color:#333;max-width:480px;">
+  <tr><td style="padding-bottom:8px;border-bottom:2px solid ${color};">
+    <strong style="font-size:16px;color:#111;">${s.full_name||""}</strong><br/>
+    <span style="color:#666;font-size:13px;">${s.title||""}${s.title&&s.company?" · ":""}${s.company||""}</span>
+  </td></tr>
+  <tr><td style="padding-top:8px;font-size:13px;color:#555;line-height:1.8;">
+    ${s.email?`<a href="mailto:${s.email}" style="color:${color};text-decoration:none;"><span style="color:${color};">✉</span> ${s.email}</a><br/>`:""}
+    ${s.phone?`<span style="color:${color};">✆</span> <span style="color:#555;">${s.phone}</span><br/>`:""}
+    ${s.website?`<a href="${s.website}" style="color:${color};text-decoration:none;"><span style="color:${color};">⊕</span> ${s.website.replace(/^https?:\/\//,"")}</a><br/>`:""}
+    ${s.tagline?`<em style="color:#888;font-size:12px;">${s.tagline}</em>`:""}
+  </td></tr>
+</table>`;
+};
+
+const SigField = ({label, field, placeholder, type="text", form, set}) => (
+  <div style={{display:"flex",flexDirection:"column",gap:5}}>
+    <div className="us-section-label">{label}</div>
+    <input className="us-input" type={type} value={form[field]||""} onChange={e=>set(field,e.target.value)} placeholder={placeholder||""}/>
+  </div>
+);
+
+const SignatureForm = ({ sig, onSave, onCancel }) => {
+  const [form, setForm] = useState(sig || {...EMPTY_SIG});
+  const [saving, setSaving] = useState(false);
+  const [preview, setPreview] = useState(false);
+  const set = (f,v) => setForm(p=>({...p,[f]:v}));
+
+  const handleSave = async () => {
+    if (!form.name.trim()) { alert("Signature name is required."); return; }
+    setSaving(true);
+    try {
+      const payload = {...form, html_output: buildSigHtml(form)};
+      let result;
+      if (sig?.id) {
+        result = await supaFetch(`/signatures?id=eq.${sig.id}`, { method:"PATCH", body:JSON.stringify(payload) });
+        result = Array.isArray(result) ? result[0] : (result || {...payload, id:sig.id});
+      } else {
+        result = await supaFetch("/signatures", { method:"POST", body:JSON.stringify(payload) });
+        result = Array.isArray(result) ? result[0] : result;
+      }
+      onSave(result);
+    } catch(e) { alert("Failed: "+e.message); }
+    setSaving(false);
+  };
+
+  return (
+    <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:24,marginBottom:16}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+        <SigField label="Signature Name *" field="name" placeholder="e.g. Urban Street - Primary Signature" form={form} set={set}/>
+        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+          <div className="us-section-label">Brand / Style</div>
+          <select className="us-input" value={form.style||"Urban Street"} onChange={e=>set("style",e.target.value)}>
+            <option>Urban Street</option>
+            <option>ProbateLend</option>
+          </select>
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+        <SigField label="Full Name" field="full_name" placeholder="Robert Smith" form={form} set={set}/>
+        <SigField label="Title" field="title" placeholder="Principal" form={form} set={set}/>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+        <SigField label="Company" field="company" placeholder="Urban Street Ventures" form={form} set={set}/>
+        <SigField label="Email" field="email" placeholder="robert@urbansv.com" form={form} set={set}/>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+        <SigField label="Phone" field="phone" placeholder="(949) 555-0100" form={form} set={set}/>
+        <SigField label="Website" field="website" placeholder="https://urbansv.com" form={form} set={set}/>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+        <SigField label="Tagline" field="tagline" placeholder="Off-Market Real Estate" form={form} set={set}/>
+        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+          <div className="us-section-label">Accent Color</div>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <input type="color" value={form.accent_color||"#e8622a"} onChange={e=>set("accent_color",e.target.value)}
+              style={{width:40,height:36,border:"none",background:"none",cursor:"pointer",padding:0}}/>
+            <input className="us-input" value={form.accent_color||""} onChange={e=>set("accent_color",e.target.value)} style={{flex:1}}/>
+          </div>
+        </div>
+      </div>
+      <div style={{display:"flex",gap:24,marginBottom:16}}>
+        <label style={{display:"flex",alignItems:"center",gap:8,cursor:"pointer",fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted}}>
+          <input type="checkbox" checked={!!form.is_default} onChange={e=>set("is_default",e.target.checked)}
+            style={{accentColor:C.accent,width:14,height:14}}/>
+          DEFAULT SIGNATURE
+        </label>
+      </div>
+      {/* Preview */}
+      <div style={{marginBottom:16}}>
+        <button className="us-btn" onClick={()=>setPreview(p=>!p)} style={{padding:"4px 14px",fontSize:11,marginBottom:preview?10:0}}>
+          {preview?"▲ HIDE":"▼ PREVIEW"}
+        </button>
+        {preview && (
+          <div style={{background:"#fff",borderRadius:4,padding:16,marginTop:8}}
+            dangerouslySetInnerHTML={{__html: buildSigHtml(form)}}/>
+        )}
+      </div>
+      <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+        <button className="us-btn" onClick={onCancel}>CANCEL</button>
+        <button className="us-btn us-save-btn" onClick={handleSave} disabled={saving}>{saving?"SAVING…":"✓ SAVE SIGNATURE"}</button>
+      </div>
+    </div>
+  );
+};
+
+// ── Template Builder
+const MERGE_FIELDS = ["{{first_name}}","{{last_name}}","{{full_name}}","{{email}}","{{company}}","{{cell}}","{{city}}","{{state}}"];
+const EMPTY_TMPL = { name:"", subject:"", body:"", from_name:"", from_email:"", reply_to:"", signature_id:"" };
+
+const TemplateForm = ({ tmpl, signatures, onSave, onCancel }) => {
+  const [form, setForm] = useState(tmpl || {...EMPTY_TMPL});
+  const [saving, setSaving] = useState(false);
+  const [preview, setPreview] = useState(false);
+  const bodyRef = useRef(null);
+  const subjectRef = useRef(null);
+  const set = (f,v) => setForm(p=>({...p,[f]:v}));
+
+  const insertIntoSubject = (field) => {
+    const el = subjectRef.current;
+    if (!el) return;
+    const start = el.selectionStart, end = el.selectionEnd;
+    const next = form.subject.slice(0,start) + field + form.subject.slice(end);
+    set("subject", next);
+    setTimeout(() => { el.focus(); el.setSelectionRange(start+field.length, start+field.length); }, 0);
+  };
+
+  const insertMerge = (field) => {
+    const el = bodyRef.current;
+    if (!el) return;
+    const start = el.selectionStart, end = el.selectionEnd;
+    const next = form.body.slice(0,start) + field + form.body.slice(end);
+    set("body", next);
+    setTimeout(() => { el.focus(); el.setSelectionRange(start+field.length, start+field.length); }, 0);
+  };
+
+  const previewBody = (body) => body
+    .replace(/{{first_name}}/g,"Robert").replace(/{{last_name}}/g,"Smith")
+    .replace(/{{full_name}}/g,"Robert Smith").replace(/{{email}}/g,"robert@example.com")
+    .replace(/{{company}}/g,"Acme Co").replace(/{{cell}}/g,"(949) 555-0100")
+    .replace(/{{city}}/g,"Newport Beach").replace(/{{state}}/g,"CA");
+
+  const selectedSig = signatures.find(s=>s.id===form.signature_id);
+
+  const handleSave = async () => {
+    if (!form.name.trim()) { alert("Template name is required."); return; }
+    setSaving(true);
+    try {
+      const payload = {...form};
+      Object.keys(payload).forEach(k=>{ if(payload[k]==="") delete payload[k]; });
+      let result;
+      if (tmpl?.id) {
+        result = await supaFetch(`/templates?id=eq.${tmpl.id}`, { method:"PATCH", body:JSON.stringify(payload) });
+        result = Array.isArray(result) ? result[0] : (result || {...payload, id:tmpl.id});
+      } else {
+        result = await supaFetch("/templates", { method:"POST", body:JSON.stringify(payload) });
+        result = Array.isArray(result) ? result[0] : result;
+      }
+      onSave(result);
+    } catch(e) { alert("Failed: "+e.message); }
+    setSaving(false);
+  };
+
+  return (
+    <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:6,padding:24,marginBottom:16}}>
+      <div style={{marginBottom:16}}>
+        <div className="us-section-label" style={{marginBottom:6}}>Brand</div>
+        <div style={{display:"flex",gap:8}}>
+          {["Urban Street","ProbateLend"].map(b=>(
+            <span key={b} onClick={()=>set("brand",b)} style={{
+              padding:"6px 18px",borderRadius:20,fontSize:12,fontFamily:"'JetBrains Mono',monospace",
+              fontWeight:600,letterSpacing:"0.06em",cursor:"pointer",
+              border:`1px solid ${form.brand===b ? C.accent : C.border}`,
+              background: form.brand===b ? "rgba(232,255,71,0.1)" : "transparent",
+              color: form.brand===b ? C.accent : C.textMuted,
+              transition:"all .12s",
+            }}>{b}</span>
+          ))}
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+          <div className="us-section-label">Template Name *</div>
+          <input className="us-input" value={form.name} onChange={e=>set("name",e.target.value)} placeholder="e.g. Intro — Urban Street"/>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div className="us-section-label">Subject Line</div>
+            <span onClick={()=>insertIntoSubject("{{first_name}}")} style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,padding:"2px 8px",border:`1px solid ${C.border}`,borderRadius:3,cursor:"pointer",color:C.accent,background:"rgba(232,255,71,0.05)",userSelect:"none"}}
+              onMouseEnter={e=>e.target.style.background="rgba(232,255,71,0.12)"} onMouseLeave={e=>e.target.style.background="rgba(232,255,71,0.05)"}>
+              + {"{{"+"first_name"+"}}"}
+            </span>
+          </div>
+          <input ref={subjectRef} className="us-input" value={form.subject} onChange={e=>set("subject",e.target.value)} placeholder="Hey {{first_name}}, quick question…"/>
+        </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:12}}>
+        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+          <div className="us-section-label">From Name</div>
+          <input className="us-input" value={form.from_name} onChange={e=>set("from_name",e.target.value)} placeholder="Robert @ Urban Street"/>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+          <div className="us-section-label">From Email</div>
+          <input className="us-input" value={form.from_email} onChange={e=>set("from_email",e.target.value)} placeholder="robert@urbansv.com"/>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+          <div className="us-section-label">Reply-To</div>
+          <input className="us-input" value={form.reply_to} onChange={e=>set("reply_to",e.target.value)} placeholder="robert@urbansv.com"/>
+        </div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:12}}>
+        <div className="us-section-label">Signature</div>
+        <select className="us-input" value={form.signature_id||""} onChange={e=>set("signature_id",e.target.value)}>
+          <option value="">— No signature —</option>
+          {signatures.map(s=><option key={s.id} value={s.id}>{s.name}{s.is_default?" (default)":""}</option>)}
+        </select>
+      </div>
+      {/* Merge fields */}
+      <div style={{marginBottom:8}}>
+        <div className="us-section-label" style={{marginBottom:6}}>Insert Merge Field</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+          {MERGE_FIELDS.map(f=>(
+            <span key={f} onClick={()=>insertMerge(f)} style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,padding:"3px 8px",border:`1px solid ${C.border}`,borderRadius:3,cursor:"pointer",color:C.accent,background:"rgba(232,255,71,0.05)",userSelect:"none"}}
+              onMouseEnter={e=>e.target.style.background="rgba(232,255,71,0.12)"} onMouseLeave={e=>e.target.style.background="rgba(232,255,71,0.05)"}>
+              {f}
+            </span>
+          ))}
+        </div>
+      </div>
+      {/* Body */}
+      <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:12}}>
+        <div className="us-section-label">Email Body</div>
+        <textarea ref={bodyRef} className="us-textarea" value={form.body} onChange={e=>set("body",e.target.value)}
+          placeholder={"Hi {{first_name}},\n\nI wanted to reach out about…"} style={{minHeight:180,fontFamily:"inherit",fontSize:14,lineHeight:1.7}}/>
+      </div>
+      {/* Preview */}
+      <div style={{marginBottom:16}}>
+        <button className="us-btn" onClick={()=>setPreview(p=>!p)} style={{padding:"4px 14px",fontSize:11,marginBottom:preview?10:0}}>
+          {preview?"▲ HIDE PREVIEW":"▼ PREVIEW"}
+        </button>
+        {preview && (
+          <div style={{background:"#fff",borderRadius:4,padding:20,marginTop:8,color:"#222",fontFamily:"Arial,sans-serif",fontSize:14,lineHeight:1.7}}>
+            {form.subject && <div style={{fontWeight:700,marginBottom:12,fontSize:15,color:"#111"}}>Subject: {previewBody(form.subject)}</div>}
+            <div style={{whiteSpace:"pre-wrap",marginBottom:16}}>{previewBody(form.body)}</div>
+            {selectedSig && <div dangerouslySetInnerHTML={{__html:selectedSig.html_output||buildSigHtml(selectedSig)}}/>}
+          </div>
+        )}
+      </div>
+      <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
+        <button className="us-btn" onClick={onCancel}>CANCEL</button>
+        <button className="us-btn us-save-btn" onClick={handleSave} disabled={saving}>{saving?"SAVING…":"✓ SAVE TEMPLATE"}</button>
+      </div>
+    </div>
+  );
+};
+
+// ── Settings Page
+const SettingsPage = ({ onBack }) => {
+  const [tab, setTab] = useState("signatures");
+  const [buckets, setBuckets] = useState([]);
+  const [tags, setTags] = useState([]);
+  const [signatures, setSignatures] = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [newBucket, setNewBucket] = useState("");
+  const [newTag, setNewTag] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [editingSig, setEditingSig] = useState(null);   // null=none, "new", or sig object
+  const [editingTmpl, setEditingTmpl] = useState(null);
+  const [previewTmplId, setPreviewTmplId] = useState(null); // null=none, "new", or tmpl object
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [b, t, s, tm] = await Promise.all([
+        supaFetch("/buckets?order=name.asc"),
+        supaFetch("/tags?order=name.asc"),
+        supaFetch("/signatures?order=name.asc"),
+        supaFetch("/templates?order=name.asc"),
+      ]);
+      setBuckets(b||[]); setTags(t||[]); setSignatures(s||[]); setTemplates(tm||[]);
+    } catch(e) { console.error(e); }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  // ── Buckets / Tags helpers
+  const addBucket = async () => {
+    const name = newBucket.trim(); if (!name) return;
+    setSaving(true);
+    try {
+      const result = await supaFetch("/buckets", { method:"POST", body:JSON.stringify({ name }) });
+      const created = Array.isArray(result) ? result[0] : result;
+      setBuckets(prev => [...prev, created].sort((a,b)=>a.name.localeCompare(b.name)));
+      setNewBucket("");
+    } catch(e) { alert("Failed: "+e.message); }
+    setSaving(false);
+  };
+  const deleteBucket = async (id) => {
+    if (!confirm("Delete this bucket type? It will be removed from all contacts.")) return;
+    try {
+      await supaFetch(`/buckets?id=eq.${id}`, { method:"DELETE", headers:{Prefer:""} });
+      setBuckets(prev => prev.filter(b=>b.id!==id));
+    } catch(e) { alert("Failed: "+e.message); }
+  };
+  const addTag = async () => {
+    const name = newTag.trim(); if (!name) return;
+    setSaving(true);
+    try {
+      const result = await supaFetch("/tags", { method:"POST", body:JSON.stringify({ name }) });
+      const created = Array.isArray(result) ? result[0] : result;
+      setTags(prev => [...prev, created].sort((a,b)=>a.name.localeCompare(b.name)));
+      setNewTag("");
+    } catch(e) { alert("Failed: "+e.message); }
+    setSaving(false);
+  };
+  const deleteTag = async (id) => {
+    if (!confirm("Delete this tag? It will be removed from all contacts.")) return;
+    try {
+      await supaFetch(`/tags?id=eq.${id}`, { method:"DELETE", headers:{Prefer:""} });
+      setTags(prev => prev.filter(t=>t.id!==id));
+    } catch(e) { alert("Failed: "+e.message); }
+  };
+
+  // ── Signatures helpers
+  const handleSigSaved = (saved) => {
+    setSignatures(prev => {
+      const exists = prev.find(s=>s.id===saved.id);
+      const next = exists ? prev.map(s=>s.id===saved.id?saved:s) : [...prev, saved];
+      return next.sort((a,b)=>a.name.localeCompare(b.name));
+    });
+    setEditingSig(null);
+  };
+  const deleteSig = async (id) => {
+    if (!confirm("Delete this signature?")) return;
+    try {
+      await supaFetch(`/signatures?id=eq.${id}`, { method:"DELETE", headers:{Prefer:""} });
+      setSignatures(prev=>prev.filter(s=>s.id!==id));
+    } catch(e) { alert("Failed: "+e.message); }
+  };
+
+  // ── Templates helpers
+  const handleTmplSaved = (saved) => {
+    setTemplates(prev => {
+      const exists = prev.find(t=>t.id===saved.id);
+      const next = exists ? prev.map(t=>t.id===saved.id?saved:t) : [...prev, saved];
+      return next.sort((a,b)=>a.name.localeCompare(b.name));
+    });
+    setEditingTmpl(null);
+  };
+  const deleteTmpl = async (id) => {
+    if (!confirm("Delete this template?")) return;
+    try {
+      await supaFetch(`/templates?id=eq.${id}`, { method:"DELETE", headers:{Prefer:""} });
+      setTemplates(prev=>prev.filter(t=>t.id!==id));
+    } catch(e) { alert("Failed: "+e.message); }
+  };
+
+  const TABS = ["signatures","templates","buckets","tags"];
+
+  return (
+    <div className="us-detail" style={{maxWidth:860,margin:"0 auto",padding:"32px 24px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:32}}>
+        <button className="us-btn" onClick={onBack}>← BACK</button>
+        <div>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.2em",color:C.accent,textTransform:"uppercase",marginBottom:4}}>Urban Street / CRM</div>
+          <h1 style={{fontSize:32,fontWeight:900,lineHeight:1,letterSpacing:"-0.02em",color:C.text}}>SETTINGS</h1>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{display:"flex",gap:2,marginBottom:28,borderBottom:`1px solid ${C.border}`}}>
+        {TABS.map(t => (
+          <button key={t} onClick={()=>{ setTab(t); setEditingSig(null); setEditingTmpl(null); }} style={{
+            background:"transparent",border:"none",cursor:"pointer",
+            padding:"8px 20px",fontFamily:"'JetBrains Mono',monospace",fontSize:11,
+            fontWeight:600,letterSpacing:"0.1em",textTransform:"uppercase",
+            color: tab===t ? C.accent : C.textMuted,
+            borderBottom: tab===t ? `2px solid ${C.accent}` : "2px solid transparent",
+            marginBottom:-1,transition:"color .15s",
+          }}>{t}</button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div style={{display:"flex",alignItems:"center",gap:10,color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:11}}>
+          <div className="us-spinner" style={{width:14,height:14}}/>LOADING…
+        </div>
+      ) : (
+        <>
+          {/* ── SIGNATURES TAB */}
+          {tab === "signatures" && (
+            <div>
+              {editingSig ? (
+                <SignatureForm
+                  sig={editingSig === "new" ? null : editingSig}
+                  onSave={handleSigSaved}
+                  onCancel={()=>setEditingSig(null)}
+                />
+              ) : (
+                <>
+                  <button className="us-btn us-save-btn" onClick={()=>setEditingSig("new")} style={{marginBottom:20,padding:"8px 20px"}}>
+                    + NEW SIGNATURE
+                  </button>
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {signatures.length===0 && <div style={{color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:12,padding:"20px 0"}}>No signatures yet.</div>}
+                    {signatures.map(s=>(
+                      <div key={s.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:4,padding:"14px 16px"}}>
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:s.html_output?10:0}}>
+                          <div>
+                            <span style={{fontSize:15,fontWeight:700,color:C.text}}>{s.name}</span>
+                            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.textMuted,marginLeft:10,letterSpacing:"0.08em"}}>{s.style}</span>
+                            {s.is_default && <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.accent,marginLeft:8,letterSpacing:"0.1em",border:`1px solid ${C.accent}`,padding:"1px 6px",borderRadius:10}}>DEFAULT</span>}
+                          </div>
+                          <div style={{display:"flex",gap:6}}>
+                            <button className="us-btn" onClick={()=>setEditingSig(s)} style={{padding:"4px 12px",fontSize:11}}>✎ EDIT</button>
+                            <button className="us-btn us-delete-btn" onClick={()=>deleteSig(s.id)} style={{padding:"4px 12px",fontSize:11}}>✕ DELETE</button>
+                          </div>
+                        </div>
+                        {s.html_output && (
+                          <div style={{background:"#fff",borderRadius:3,padding:"10px 14px",marginTop:8}}
+                            dangerouslySetInnerHTML={{__html:s.html_output}}/>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── TEMPLATES TAB */}
+          {tab === "templates" && (
+            <div>
+              {editingTmpl ? (
+                <TemplateForm
+                  tmpl={editingTmpl === "new" ? null : editingTmpl}
+                  signatures={signatures}
+                  onSave={handleTmplSaved}
+                  onCancel={()=>setEditingTmpl(null)}
+                />
+              ) : (
+                <>
+                  <button className="us-btn us-save-btn" onClick={()=>setEditingTmpl("new")} style={{marginBottom:20,padding:"8px 20px"}}>
+                    + NEW TEMPLATE
+                  </button>
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {templates.length===0 && <div style={{color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:12,padding:"20px 0"}}>No templates yet.</div>}
+                    {templates.map(t=>{
+                      const sig = signatures.find(s=>s.id===t.signature_id);
+                      const previewBody = (body) => (body||"")
+                        .replace(/{{first_name}}/g,"Robert").replace(/{{last_name}}/g,"Smith")
+                        .replace(/{{full_name}}/g,"Robert Smith").replace(/{{email}}/g,"robert@example.com")
+                        .replace(/{{company}}/g,"Acme Co").replace(/{{cell}}/g,"(949) 555-0100")
+                        .replace(/{{city}}/g,"Newport Beach").replace(/{{state}}/g,"CA");
+                      return (
+                        <div key={t.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:4,padding:"14px 16px"}}>
+                          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
+                            <div style={{flex:1,minWidth:0}}>
+                              {t.brand && <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.15em",textTransform:"uppercase",color:C.accent,marginBottom:4}}>{t.brand}</div>}
+                              <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:4}}>{t.name}</div>
+                              {t.subject && <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted,marginBottom:4}}>Subject: {t.subject}</div>}
+                              {t.from_name && <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted,marginBottom:4}}>From: {t.from_name}{t.from_email?` <${t.from_email}>`:""}</div>}
+                              {sig && <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.accent}}>Sig: {sig.name}</div>}
+                            </div>
+                            <div style={{display:"flex",gap:6,flexShrink:0}}>
+                              <button className="us-btn" onClick={()=>setPreviewTmplId(p=>p===t.id?null:t.id)} style={{padding:"4px 12px",fontSize:11}}>▼ PREVIEW</button>
+                              <button className="us-btn" onClick={()=>setEditingTmpl(t)} style={{padding:"4px 12px",fontSize:11}}>✎ EDIT</button>
+                              <button className="us-btn us-delete-btn" onClick={()=>deleteTmpl(t.id)} style={{padding:"4px 12px",fontSize:11}}>✕ DELETE</button>
+                            </div>
+                          </div>
+                          {previewTmplId === t.id && (
+                            <div style={{background:"#fff",borderRadius:4,padding:20,marginTop:12,color:"#222",fontFamily:"Arial,sans-serif",fontSize:14,lineHeight:1.7}}>
+                              {t.subject && <div style={{fontWeight:700,marginBottom:12,fontSize:15,color:"#111"}}>Subject: {previewBody(t.subject)}</div>}
+                              <div style={{whiteSpace:"pre-wrap",marginBottom:16}}>{previewBody(t.body)}</div>
+                              {sig && <div dangerouslySetInnerHTML={{__html: sig.html_output||""}}/>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── BUCKETS TAB */}
+          {tab === "buckets" && (
+            <>
+              <div style={{display:"flex",gap:8,marginBottom:24}}>
+                <input className="us-input" value={newBucket} onChange={e=>setNewBucket(e.target.value)}
+                  onKeyDown={e=>{ if(e.key==="Enter") addBucket(); }}
+                  placeholder="New bucket name…" style={{maxWidth:320}}/>
+                <button className="us-btn us-save-btn" onClick={addBucket} disabled={saving||!newBucket.trim()} style={{padding:"8px 20px"}}>+ ADD BUCKET</button>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                {buckets.length===0 && <div style={{color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:12,padding:"20px 0"}}>No buckets yet.</div>}
+                {buckets.map(item=>(
+                  <div key={item.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:4}}>
+                    <span style={{fontSize:15,fontWeight:600,color:C.text}}>{item.name}</span>
+                    <button className="us-btn us-delete-btn" onClick={()=>deleteBucket(item.id)} style={{padding:"4px 12px",fontSize:11}}>✕ DELETE</button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* ── TAGS TAB */}
+          {tab === "tags" && (
+            <>
+              <div style={{display:"flex",gap:8,marginBottom:24}}>
+                <input className="us-input" value={newTag} onChange={e=>setNewTag(e.target.value)}
+                  onKeyDown={e=>{ if(e.key==="Enter") addTag(); }}
+                  placeholder="New tag name…" style={{maxWidth:320}}/>
+                <button className="us-btn us-save-btn" onClick={addTag} disabled={saving||!newTag.trim()} style={{padding:"8px 20px"}}>+ ADD TAG</button>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:4}}>
+                {tags.length===0 && <div style={{color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:12,padding:"20px 0"}}>No tags yet.</div>}
+                {tags.map(item=>(
+                  <div key={item.id} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 16px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:4}}>
+                    <span style={{fontSize:15,fontWeight:600,color:C.text}}>{item.name}</span>
+                    <button className="us-btn us-delete-btn" onClick={()=>deleteTag(item.id)} style={{padding:"4px 12px",fontSize:11}}>✕ DELETE</button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
+// ── Bulk Sends Page
+const SEND_RATES = [
+  { label:"5 / min", value:5 },
+  { label:"10 / min", value:10 },
+  { label:"20 / min", value:20 },
+  { label:"60 / min", value:60 },
+];
+
+const applyMerge = (body, contact) => {
+  if (!body) return "";
+  return body
+    .replace(/{{first_name}}/gi, contact.first_name||"")
+    .replace(/{{last_name}}/gi, contact.last_name||"")
+    .replace(/{{full_name}}/gi, `${contact.first_name||""} ${contact.last_name||""}`.trim())
+    .replace(/{{email}}/gi, contact.email||"")
+    .replace(/{{cell}}/gi, contact.cell_phone||"")
+    .replace(/{{company}}/gi, contact.company||"")
+    .replace(/{{city}}/gi, contact.city||"")
+    .replace(/{{state}}/gi, contact.state||"");
+};
+
+const BulkSendsPage = ({ allContacts, preselectedContacts }) => {
+  const [step, setStep] = useState(0);
+  const [templates, setTemplates] = useState([]);
+  const [signatures, setSignatures] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Step 0 — template or compose
+  const [mode, setMode] = useState("template"); // "template" | "compose"
+  const [selTmpl, setSelTmpl] = useState(null);
+  const [previewCid, setPreviewCid] = useState(null);
+  const [showPreview, setShowPreview] = useState(false);
+  const [composeSubject, setComposeSubject] = useState("");
+  const [composeBody, setComposeBody] = useState("");
+  const [composeSigId, setComposeSigId] = useState("");
+
+  // Step 1 — filters
+  const [search, setSearch] = useState("");
+  const [selTags, setSelTags] = useState([]);
+  const [selBuckets, setSelBuckets] = useState([]);
+
+  // Step 2 — recipients locked in
+  const [recipients, setRecipients] = useState([]);
+
+  // Step 3 — send
+  const [rate, setRate] = useState(10);
+  const [queue, setQueue] = useState([]);
+  const [sendState, setSendState] = useState("idle"); // idle|running|paused|done
+  const [curIdx, setCurIdx] = useState(0);
+  const [log, setLog] = useState([]);
+  const intervalRef = useRef(null);
+
+  useEffect(() => {
+    Promise.all([
+      supaFetch("/templates?order=name.asc"),
+      supaFetch("/signatures?order=name.asc"),
+    ]).then(([t, s]) => {
+      setTemplates(t||[]);
+      setSignatures(s||[]);
+      setLoading(false);
+    }).catch(e => { console.error(e); setLoading(false); });
+  }, []);
+
+  useEffect(() => () => clearInterval(intervalRef.current), []);
+
+  // Derived
+  const allTagNames = [...new Set((allContacts||[]).flatMap(c => {
+    const tags = c.contact_tags||[];
+    return tags.map(ct => ct.tags?.name).filter(Boolean);
+  }))].sort();
+
+  const allBucketNames = [...new Set((allContacts||[]).flatMap(c => {
+    const buckets = c.contact_buckets||[];
+    return buckets.map(cb => cb.buckets?.name).filter(Boolean);
+  }))].sort();
+
+  const filtered = (allContacts||[]).filter(c => {
+    if (!c.email) return false;
+    const q = search.toLowerCase();
+    const nameMatch = !q || `${c.first_name||""} ${c.last_name||""} ${c.email||""} ${c.company||""}`.toLowerCase().includes(q);
+    const contactTagNames = (c.contact_tags||[]).map(ct=>ct.tags?.name).filter(Boolean);
+    const contactBucketNames = (c.contact_buckets||[]).map(cb=>cb.buckets?.name).filter(Boolean);
+    const tagMatch = selTags.length===0 || selTags.every(t=>contactTagNames.includes(t));
+    const bucketMatch = selBuckets.length===0 || selBuckets.some(b=>contactBucketNames.includes(b));
+    return nameMatch && tagMatch && bucketMatch;
+  });
+
+  // When launched from table, skip the filter step
+  useEffect(() => {
+    if (preselectedContacts) {
+      setRecipients(preselectedContacts);
+      setQueue(preselectedContacts.map(c=>({...c,_status:"queued"})));
+    }
+  }, [preselectedContacts]);
+
+  const goNext = () => {
+    if (step===1) {
+      setRecipients(filtered);
+      setQueue(filtered.map(c=>({...c, _status:"queued"})));
+    }
+    // skip filter step (step 1) if recipients are pre-loaded from table
+    const nextStep = (preselectedContacts && step===0) ? 2 : step+1;
+    setStep(nextStep);
+  };
+  const goBack = () => {
+    // skip filter step going back too
+    const prevStep = (preselectedContacts && step===2) ? 0 : step-1;
+    setStep(prevStep);
+  };
+
+  // Send engine
+  const msPerSend = Math.round(60000/rate);
+  const sentCount = queue.filter(q=>q._status==="sent").length;
+  const failCount = queue.filter(q=>q._status==="failed").length;
+  const progress = queue.length>0 ? Math.round((sentCount+failCount)/queue.length*100) : 0;
+
+  const runSend = () => {
+    setSendState("running");
+    let idx = curIdx;
+    intervalRef.current = setInterval(() => {
+      if (idx >= queue.length) { clearInterval(intervalRef.current); setSendState("done"); return; }
+      const contact = queue[idx];
+      setQueue(prev => { const q=[...prev]; q[idx]={...q[idx],_status:"sending"}; return q; });
+      setTimeout(() => {
+        const ok = Math.random()>0.05;
+        const status = ok?"sent":"failed";
+        setQueue(prev => { const q=[...prev]; if(q[idx]) q[idx]={...q[idx],_status:status}; return q; });
+        setLog(l=>[{name:`${contact.first_name||""} ${contact.last_name||""}`.trim(), email:contact.email, status, time:new Date().toLocaleTimeString()},...l]);
+        setCurIdx(idx+1);
+        idx++;
+        if (idx>=queue.length) { clearInterval(intervalRef.current); setSendState("done"); }
+      }, msPerSend*0.75);
+      idx++;
+      if (idx>queue.length) clearInterval(intervalRef.current);
+    }, msPerSend);
+  };
+
+  const pauseSend = () => { clearInterval(intervalRef.current); setSendState("paused"); };
+  const resetSend = () => {
+    clearInterval(intervalRef.current);
+    setSendState("idle"); setCurIdx(0);
+    setQueue(recipients.map(c=>({...c,_status:"queued"})));
+    setLog([]);
+  };
+
+  const copyEmails = () => navigator.clipboard.writeText(recipients.map(c=>c.email).join(", "));
+  const openGmail = () => {
+    const to = encodeURIComponent(recipients.map(c=>c.email).join(","));
+    const subj = encodeURIComponent(mode==="compose" ? composeSubject : (selTmpl?.subject||selTmpl?.name||""));
+    window.open(`https://mail.google.com/mail/?view=cm&to=${to}&su=${subj}`, "_blank");
+  };
+
+  const previewContact = (allContacts||[]).find(c=>c.id===previewCid) || allContacts?.[0];
+  const sig = mode==="compose"
+    ? signatures.find(s=>s.id===composeSigId)
+    : selTmpl ? signatures.find(s=>s.id===selTmpl.signature_id) : null;
+
+  const step0Valid = mode==="template" ? !!selTmpl : composeSubject.trim().length>0 && composeBody.trim().length>0;
+
+  // Step labels
+  const STEPS = ["Template","Filter","Review","Send"];
+  const StepBar = () => (
+    <div style={{display:"flex",alignItems:"center",marginBottom:28}}>
+      {STEPS.map((s,i) => {
+        const skipped = preselectedContacts && i===1;
+        const done = i<step || skipped;
+        const active = i===step && !skipped;
+        return (
+          <React.Fragment key={s}>
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5}}>
+              <div style={{
+                width:30,height:30,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",
+                background:done?C.accent:"transparent",
+                border:`2px solid ${done||active?C.accent:C.border}`,
+                color:done?"#fff":active?C.accent:C.textMuted,
+                fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,
+                opacity:skipped?0.5:1,
+              }}>{done?"✓":i+1}</div>
+              <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.12em",textTransform:"uppercase",color:active?C.accent:done?C.textSub:C.textMuted,opacity:skipped?0.4:1}}>{skipped?"SKIPPED":s}</span>
+            </div>
+            {i<STEPS.length-1 && <div style={{flex:1,height:1,background:done?C.accent:C.border,margin:"0 8px",marginBottom:18}}/>}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+
+  const SLabel = ({children}) => (
+    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.16em",textTransform:"uppercase",color:C.accent,marginBottom:10}}>{children}</div>
+  );
+
+  const NavBtns = ({nextLabel="NEXT →",nextDisabled}) => (
+    <div style={{display:"flex",justifyContent:"space-between",marginTop:24,paddingTop:20,borderTop:`1px solid ${C.border}`}}>
+      <div>{step>0 && <button className="us-btn" onClick={goBack}>← BACK</button>}</div>
+      <button className="us-btn us-save-btn" onClick={goNext} disabled={nextDisabled} style={{opacity:nextDisabled?0.4:1}}>{nextLabel}</button>
+    </div>
+  );
+
+  const statusStyle = (s) => {
+    if (s==="sent")    return {background:"rgba(26,127,60,.1)",color:C.green,border:`1px solid rgba(26,127,60,.3)`};
+    if (s==="failed")  return {background:"rgba(204,34,34,.1)",color:C.red,border:`1px solid rgba(204,34,34,.3)`};
+    if (s==="sending") return {background:"rgba(232,98,42,.1)",color:C.accent,border:`1px solid rgba(232,98,42,.3)`};
+    return {background:C.elevated,color:C.textMuted,border:`1px solid ${C.border}`};
+  };
+  const StatusBadge = ({s}) => (
+    <span style={{...statusStyle(s),display:"inline-block",padding:"2px 8px",borderRadius:2,fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.1em",textTransform:"uppercase",fontWeight:600}}>{s}</span>
+  );
+
+  if (loading) return (
+    <div className="us-loading"><div className="us-spinner"/>LOADING TEMPLATES</div>
+  );
+
+  return (
+    <div style={{maxWidth:960,margin:"0 auto",padding:"32px 24px"}}>
+      <div style={{marginBottom:28}}>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.2em",color:C.accent,textTransform:"uppercase",marginBottom:6}}>Urban Street / CRM</div>
+        <h1 style={{fontSize:36,fontWeight:900,lineHeight:1,letterSpacing:"-0.02em",color:C.text}}>BULK SENDS</h1>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted,marginTop:4}}>Send a template to a filtered contact list</div>
+        {preselectedContacts && (
+          <div style={{marginTop:10,display:"inline-flex",alignItems:"center",gap:8,padding:"6px 14px",background:"rgba(232,98,42,.08)",border:`1px solid rgba(232,98,42,.3)`,borderRadius:3}}>
+            <span style={{color:C.accent,fontSize:13}}>✓</span>
+            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.accent,fontWeight:700}}>{preselectedContacts.length} CONTACTS FROM TABLE</span>
+            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.textMuted}}> — filter step skipped</span>
+          </div>
+        )}
+      </div>
+
+      <StepBar/>
+
+      {/* ── STEP 0: TEMPLATE OR COMPOSE ── */}
+      {step===0 && (
+        <div>
+          {/* Mode toggle */}
+          <div style={{display:"flex",gap:2,marginBottom:24,borderBottom:`1px solid ${C.border}`}}>
+            {[{key:"template",label:"USE A TEMPLATE"},{key:"compose",label:"COMPOSE"}].map(({key,label})=>(
+              <button key={key} onClick={()=>{setMode(key);setShowPreview(false);}}
+                style={{background:"transparent",border:"none",cursor:"pointer",padding:"8px 20px",
+                  fontFamily:"'JetBrains Mono',monospace",fontSize:11,fontWeight:700,letterSpacing:"0.1em",
+                  color:mode===key?C.accent:C.textMuted,
+                  borderBottom:`2px solid ${mode===key?C.accent:"transparent"}`,
+                  marginBottom:-1,transition:"color .15s"}}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* ── TEMPLATE MODE ── */}
+          {mode==="template" && (
+            <>
+              <SLabel>Choose a Template</SLabel>
+              {templates.length===0 ? (
+                <div style={{color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:12,padding:"24px 0"}}>No templates found. Create one in Settings → Templates first.</div>
+              ) : (
+                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12,marginBottom:24}}>
+                  {templates.map(t=>(
+                    <div key={t.id} onClick={()=>{setSelTmpl(t);setShowPreview(false);}}
+                      style={{
+                        background:selTmpl?.id===t.id?"rgba(232,98,42,.06)":C.surface,
+                        border:`2px solid ${selTmpl?.id===t.id?C.accent:C.border}`,
+                        borderRadius:4,padding:"16px",cursor:"pointer",transition:"all .15s",
+                      }}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                        <span style={{fontSize:15,fontWeight:700,color:C.text}}>{t.name}</span>
+                        {selTmpl?.id===t.id && <span style={{color:C.accent,fontSize:14}}>✓</span>}
+                      </div>
+                      {t.brand && <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.12em",textTransform:"uppercase",color:C.accent,marginBottom:4}}>{t.brand}</div>}
+                      {t.subject && <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted,marginBottom:8}}>Subj: {t.subject}</div>}
+                      <button onClick={e=>{e.stopPropagation();setSelTmpl(t);setShowPreview(true);}}
+                        className="us-btn" style={{padding:"4px 10px",fontSize:10,marginTop:4}}>▼ PREVIEW</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {showPreview && selTmpl && (
+                <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:4,padding:20,marginBottom:20}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.16em",textTransform:"uppercase",color:C.accent}}>Template Preview</div>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.textMuted}}>Preview as:</span>
+                      <select className="us-select" value={previewCid||""} onChange={e=>setPreviewCid(e.target.value)}
+                        style={{width:"auto",padding:"4px 10px",fontSize:12}}>
+                        {(allContacts||[]).slice(0,30).map(c=>(
+                          <option key={c.id} value={c.id}>{c.first_name} {c.last_name}</option>
+                        ))}
+                      </select>
+                      <button className="us-btn" onClick={()=>setShowPreview(false)} style={{padding:"4px 10px",fontSize:10}}>✕ CLOSE</button>
+                    </div>
+                  </div>
+                  {selTmpl.subject && (
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textSub,marginBottom:10,padding:"6px 10px",background:C.elevated,borderRadius:3}}>
+                      Subject: {previewContact ? applyMerge(selTmpl.subject, previewContact) : selTmpl.subject}
+                    </div>
+                  )}
+                  <div style={{background:"#fff",borderRadius:3,padding:"14px 16px",color:"#222",fontFamily:"Arial,sans-serif",fontSize:14,lineHeight:1.7,whiteSpace:"pre-wrap",maxHeight:280,overflowY:"auto"}}>
+                    {previewContact ? applyMerge(selTmpl.body||"", previewContact) : selTmpl.body||""}
+                  </div>
+                  {sig?.html_output && (
+                    <div style={{background:"#fff",borderRadius:3,padding:"10px 16px",marginTop:8}} dangerouslySetInnerHTML={{__html:sig.html_output}}/>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ── COMPOSE MODE ── */}
+          {mode==="compose" && (
+            <div style={{display:"flex",flexDirection:"column",gap:16,maxWidth:680}}>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                <div className="us-section-label">Subject</div>
+                <input className="us-input" placeholder="Email subject…" value={composeSubject}
+                  onChange={e=>setComposeSubject(e.target.value)}/>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                <div className="us-section-label">Body</div>
+                <textarea className="us-textarea" placeholder="Write your email here…" value={composeBody}
+                  onChange={e=>setComposeBody(e.target.value)} style={{minHeight:220,resize:"vertical"}}/>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                <div className="us-section-label">Signature</div>
+                <div style={{position:"relative"}}>
+                  <select className="us-select" value={composeSigId} onChange={e=>setComposeSigId(e.target.value)}
+                    style={{paddingRight:32}}>
+                    <option value="">— No signature —</option>
+                    {signatures.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                  <span style={{position:"absolute",right:12,top:"50%",transform:"translateY(-50%)",color:"#555",pointerEvents:"none",fontSize:10}}>▼</span>
+                </div>
+              </div>
+              {sig?.html_output && (
+                <div>
+                  <div className="us-section-label">Signature Preview</div>
+                  <div style={{background:"#fff",borderRadius:3,padding:"12px 16px",border:`1px solid ${C.border}`}}
+                    dangerouslySetInnerHTML={{__html:sig.html_output}}/>
+                </div>
+              )}
+            </div>
+          )}
+
+          <NavBtns nextLabel="CHOOSE RECIPIENTS →" nextDisabled={!step0Valid}/>
+        </div>
+      )}
+
+      {/* ── STEP 1: FILTER ── */}
+      {step===1 && (
+        <div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 260px",gap:24}}>
+            <div>
+              <SLabel>Filter Contacts</SLabel>
+              <input className="us-search" placeholder="Search name, email, company…" value={search}
+                onChange={e=>setSearch(e.target.value)} style={{width:"100%",marginBottom:14}}/>
+
+              {allTagNames.length>0 && (
+                <div style={{marginBottom:16}}>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:C.textMuted,marginBottom:8}}>Filter by Tag</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {allTagNames.map(t=>(
+                      <span key={t} onClick={()=>setSelTags(p=>p.includes(t)?p.filter(x=>x!==t):[...p,t])}
+                        className={selTags.includes(t)?"us-tag-pill":"us-tag-available"} style={{cursor:"pointer"}}>
+                        {selTags.includes(t)?"✓ "+t:"+ "+t}
+                        {selTags.includes(t) && <span className="us-tag-pill-remove" style={{marginLeft:4}}>×</span>}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {allBucketNames.length>0 && (
+                <div style={{marginBottom:16}}>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:C.textMuted,marginBottom:8}}>Filter by Bucket</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {allBucketNames.map(b=>(
+                      <span key={b} onClick={()=>setSelBuckets(p=>p.includes(b)?p.filter(x=>x!==b):[...p,b])}
+                        className={selBuckets.includes(b)?"us-tag-pill":"us-tag-available"} style={{cursor:"pointer"}}>
+                        {selBuckets.includes(b)?"✓ "+b:"+ "+b}
+                        {selBuckets.includes(b) && <span className="us-tag-pill-remove" style={{marginLeft:4}}>×</span>}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{border:`1px solid ${C.border}`,borderRadius:4,overflow:"hidden"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 14px",background:C.elevated,borderBottom:`1px solid ${C.border}`}}>
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,letterSpacing:"0.1em",textTransform:"uppercase",color:C.textMuted}}>Matching Contacts</span>
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:C.accent}}>{filtered.length}</span>
+                </div>
+                <div style={{maxHeight:300,overflowY:"auto"}}>
+                  {filtered.length===0 && <div style={{color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:11,padding:"20px 14px",textAlign:"center"}}>No contacts match</div>}
+                  {filtered.slice(0,60).map((c,i)=>(
+                    <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 14px",borderBottom:i<filtered.length-1?`1px solid ${C.border}`:"none"}}>
+                      <div style={{width:28,height:28,background:"rgba(232,98,42,.08)",border:`1px solid rgba(232,98,42,.2)`,borderRadius:2,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:11,color:C.accent,flexShrink:0}}>
+                        {(c.first_name?.[0]||"")+(c.last_name?.[0]||"")}
+                      </div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <span style={{fontSize:14,fontWeight:600,color:C.text}}>{c.first_name} {c.last_name}</span>
+                        {c.company && <span style={{color:C.textMuted,fontSize:13}}> · {c.company}</span>}
+                        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted}}>{c.email}</div>
+                      </div>
+                      {(c.contact_tags||[]).slice(0,2).map(ct=>ct.tags?.name&&(
+                        <span key={ct.tag_id} className="us-tag" style={{fontSize:10}}>{ct.tags.name}</span>
+                      ))}
+                    </div>
+                  ))}
+                  {filtered.length>60 && <div style={{padding:"8px 14px",fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.textMuted,textAlign:"center"}}>+{filtered.length-60} more</div>}
+                </div>
+              </div>
+            </div>
+
+            {/* Summary sidebar */}
+            <div>
+              <SLabel>Send Summary</SLabel>
+              <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:4,padding:"16px"}}>
+                {[
+                  {label:"Template", val:mode==="compose" ? `Compose: "${composeSubject}"` : selTmpl?.name},
+                  {label:"Recipients", val:filtered.length, accent:true},
+                  {label:"Has Email", val:`${filtered.length} / ${(allContacts||[]).length}`},
+                  selTags.length>0&&{label:"Tag Filters", val:selTags.join(", ")},
+                  selBuckets.length>0&&{label:"Bucket Filters", val:selBuckets.join(", ")},
+                ].filter(Boolean).map(({label,val,accent})=>(
+                  <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${C.border}`}}>
+                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.textMuted,letterSpacing:"0.08em",textTransform:"uppercase"}}>{label}</span>
+                    <span style={{fontSize:14,fontWeight:700,color:accent?C.accent:C.text}}>{val}</span>
+                  </div>
+                ))}
+                {(selTags.length>0||selBuckets.length>0||search) && (
+                  <button className="us-btn" onClick={()=>{setSelTags([]);setSelBuckets([]);setSearch("");}}
+                    style={{marginTop:12,width:"100%",justifyContent:"center",fontSize:10}}>✕ CLEAR FILTERS</button>
+                )}
+              </div>
+            </div>
+          </div>
+          <NavBtns nextLabel={`REVIEW ${filtered.length} RECIPIENTS →`} nextDisabled={filtered.length===0}/>
+        </div>
+      )}
+
+      {/* ── STEP 2: REVIEW ── */}
+      {step===2 && (
+        <div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <SLabel>{recipients.length} Recipients</SLabel>
+            <div style={{display:"flex",gap:8}}>
+              <button className="us-btn" onClick={copyEmails} style={{fontSize:11,padding:"6px 14px"}}>⎘ COPY EMAIL LIST</button>
+            </div>
+          </div>
+          <div style={{border:`1px solid ${C.border}`,borderRadius:4,overflow:"hidden",marginBottom:4}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",padding:"8px 14px",background:C.elevated,borderBottom:`1px solid ${C.border}`,fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.12em",textTransform:"uppercase",color:C.textMuted,gap:8}}>
+              <span>Name</span><span>Email</span><span>Company</span><span>Tags</span>
+            </div>
+            <div style={{maxHeight:420,overflowY:"auto"}}>
+              {recipients.map((c,i)=>(
+                <div key={c.id} style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr auto",padding:"9px 14px",borderBottom:i<recipients.length-1?`1px solid ${C.border}`:"none",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:14,fontWeight:600,color:C.text}}>{c.first_name} {c.last_name}</span>
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:C.textMuted}}>{c.email}</span>
+                  <span style={{fontSize:13,color:C.textMuted}}>{c.company||"—"}</span>
+                  <div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                    {(c.contact_tags||[]).slice(0,2).map(ct=>ct.tags?.name&&(
+                      <span key={ct.tag_id} className="us-tag" style={{fontSize:10}}>{ct.tags.name}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <NavBtns nextLabel="CONFIGURE & SEND →"/>
+        </div>
+      )}
+
+      {/* ── STEP 3: SEND ── */}
+      {step===3 && (
+        <div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 300px",gap:24}}>
+            {/* Queue */}
+            <div>
+              <SLabel>Send Queue</SLabel>
+              <div style={{border:`1px solid ${C.border}`,borderRadius:4,overflow:"hidden"}}>
+                {/* Progress */}
+                <div style={{padding:"12px 16px",borderBottom:`1px solid ${C.border}`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
+                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textSub}}>{sentCount+failCount} of {queue.length} processed</span>
+                    <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:C.accent}}>{progress}%</span>
+                  </div>
+                  <div style={{height:4,background:C.border,borderRadius:2,overflow:"hidden"}}>
+                    <div style={{height:"100%",borderRadius:2,width:`${progress}%`,background:C.accent,transition:"width .4s ease"}}/>
+                  </div>
+                  <div style={{display:"flex",gap:16,marginTop:8}}>
+                    {[{l:"Sent",v:sentCount,c:C.green},{l:"Failed",v:failCount,c:C.red},{l:"Queued",v:queue.filter(q=>q._status==="queued").length,c:C.textMuted}].map(({l,v,c})=>(
+                      <div key={l} style={{display:"flex",gap:5,alignItems:"center"}}>
+                        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:700,color:c}}>{v}</span>
+                        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.textMuted,textTransform:"uppercase",letterSpacing:"0.08em"}}>{l}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* Rows */}
+                <div style={{maxHeight:380,overflowY:"auto"}}>
+                  {queue.map((c,i)=>(
+                    <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 14px",borderBottom:i<queue.length-1?`1px solid ${C.border}`:"none",opacity:c._status==="queued"?0.45:1,transition:"opacity .3s"}}>
+                      <div style={{width:26,height:26,background:"rgba(232,98,42,.06)",border:`1px solid rgba(232,98,42,.15)`,borderRadius:2,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:10,color:C.accent,flexShrink:0}}>
+                        {(c.first_name?.[0]||"")+(c.last_name?.[0]||"")}
+                      </div>
+                      <div style={{flex:1}}>
+                        <span style={{fontSize:14,fontWeight:600,color:C.text}}>{c.first_name} {c.last_name}</span>
+                        <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted,marginLeft:8}}>{c.email}</span>
+                      </div>
+                      {c._status==="sending"
+                        ? <div className="us-spinner" style={{width:14,height:14,borderWidth:1.5}}/>
+                        : <StatusBadge s={c._status}/>
+                      }
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Controls */}
+            <div style={{display:"flex",flexDirection:"column",gap:16}}>
+              {/* Rate */}
+              <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:4,padding:"16px"}}>
+                <SLabel>Throttle Rate</SLabel>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:10}}>
+                  {SEND_RATES.map(r=>(
+                    <button key={r.value} onClick={()=>setRate(r.value)} className="us-btn"
+                      style={{
+                        justifyContent:"center",fontSize:12,padding:"8px 6px",
+                        background:rate===r.value?"rgba(232,98,42,.08)":"transparent",
+                        borderColor:rate===r.value?C.accent:C.border,
+                        color:rate===r.value?C.accent:C.textMuted,
+                        fontWeight:rate===r.value?700:500,
+                      }}>{r.label}</button>
+                  ))}
+                </div>
+                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.textMuted}}>
+                  1 email / {(msPerSend/1000).toFixed(1)}s · ~{Math.ceil(queue.length/rate)}m total
+                </div>
+              </div>
+
+              {/* Real send options */}
+              <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:4,padding:"16px"}}>
+                <SLabel>Send Via</SLabel>
+                <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                  <button className="us-btn" onClick={openGmail}
+                    style={{justifyContent:"center",fontSize:12,borderColor:"rgba(66,133,244,.5)",color:"#4285f4",background:"rgba(66,133,244,.06)"}}>
+                    ✉ OPEN IN GMAIL
+                  </button>
+                  <button className="us-btn" onClick={copyEmails} style={{justifyContent:"center",fontSize:12}}>
+                    ⎘ COPY EMAIL LIST
+                  </button>
+                </div>
+              </div>
+
+              {/* Simulation */}
+              <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:4,padding:"16px"}}>
+                <SLabel>Simulation</SLabel>
+                {sendState==="idle" && (
+                  <button className="us-btn us-save-btn" onClick={runSend} style={{width:"100%",justifyContent:"center"}}>▶ RUN SIMULATION</button>
+                )}
+                {sendState==="running" && (
+                  <button className="us-btn" onClick={pauseSend} style={{width:"100%",justifyContent:"center",borderColor:"#c45c00",color:"#c45c00",background:"rgba(196,92,0,.06)"}}>
+                    ⏸ PAUSE
+                  </button>
+                )}
+                {sendState==="paused" && (
+                  <div style={{display:"flex",gap:6}}>
+                    <button className="us-btn us-save-btn" onClick={runSend} style={{flex:1,justifyContent:"center"}}>▶ RESUME</button>
+                    <button className="us-btn" onClick={resetSend}>↺ RESET</button>
+                  </div>
+                )}
+                {sendState==="done" && (
+                  <div style={{textAlign:"center"}}>
+                    <div style={{color:C.green,fontFamily:"'JetBrains Mono',monospace",fontWeight:700,fontSize:13,marginBottom:6}}>✓ SIMULATION COMPLETE</div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted,marginBottom:10}}>{sentCount} sent · {failCount} failed</div>
+                    <button className="us-btn" onClick={resetSend} style={{fontSize:11}}>↺ RUN AGAIN</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Activity log */}
+          {log.length>0 && (
+            <div style={{marginTop:24}}>
+              <SLabel>Activity Log</SLabel>
+              <div style={{border:`1px solid ${C.border}`,borderRadius:4,overflow:"hidden"}}>
+                <div style={{maxHeight:180,overflowY:"auto"}}>
+                  {log.slice(0,50).map((entry,i)=>(
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:12,padding:"7px 14px",borderBottom:i<log.length-1?`1px solid ${C.border}`:"none"}}>
+                      <StatusBadge s={entry.status}/>
+                      <span style={{fontSize:13,fontWeight:600,color:C.text,flex:1}}>{entry.name}</span>
+                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted}}>{entry.email}</span>
+                      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.textMuted}}>{entry.time}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div style={{marginTop:24,paddingTop:20,borderTop:`1px solid ${C.border}`}}>
+            <button className="us-btn" onClick={goBack}>← BACK TO REVIEW</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ── App
+function App() {
+  const [contacts, setContacts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [creatingNew, setCreatingNew] = useState(false);
+  const [view, setView] = useState("contacts"); // contacts | bulk | settings
+  const [bulkSendContacts, setBulkSendContacts] = useState(null);
+
+  const goTo = (v) => { setView(v); setSelected(null); setCreatingNew(false); if(v!=="bulk") setBulkSendContacts(null); };
+
+  const handleBulkSendFromTable = (selectedContacts) => {
+    const contacts = Array.isArray(selectedContacts) ? selectedContacts : [selectedContacts];
+    setBulkSendContacts(contacts);
+    setView("bulk");
+  };
+
+  const load = useCallback(async () => {
+    setLoading(true); setError(null);
+    try {
+      // Paginate through all contacts in batches of 1000
+      const PAGE = 1000;
+      const base = "/contacts?order=last_name.asc,first_name.asc&select=*,contact_tags(tag_id,tags(id,name)),contact_buckets(bucket_id,buckets(id,name))";
+      let all = [];
+      let offset = 0;
+      while (true) {
+        const batch = await supaFetch(`${base}&limit=${PAGE}&offset=${offset}`, {
+          headers: { "Range-Unit": "items" }
+        });
+        if (!batch || batch.length === 0) break;
+        all = all.concat(batch);
+        if (batch.length < PAGE) break; // last page
+        offset += PAGE;
+      }
+      setContacts(all);
+    } catch(e) { setError(e.message); }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => { window.__bulkRefresh = load; return () => { delete window.__bulkRefresh; }; }, [load]);
+
+  const handleSave = (updated) => {
+    setSelected(updated);
+    setContacts(prev => prev.map(c => c.id===updated.id ? updated : c));
+  };
+
+  const handleDelete = (id) => {
+    setContacts(prev => prev.filter(c => c.id !== id));
+    setSelected(null);
+  };
+
+  const handleCreated = async (newContact) => {
+    // Re-fetch with full joins so contact_buckets/tags are present in detail view
+    let full = newContact;
+    try {
+      const data = await supaFetch(`/contacts?id=eq.${newContact.id}&select=*,contact_tags(tag_id,tags(id,name)),contact_buckets(bucket_id,buckets(id,name))`);
+      if (data && data[0]) full = data[0];
+    } catch(e) {}
+    setContacts(prev => [...prev, full].sort((a,b) => {
+      const an = (a.last_name||"").toLowerCase();
+      const bn = (b.last_name||"").toLowerCase();
+      return an < bn ? -1 : an > bn ? 1 : 0;
+    }));
+    setCreatingNew(false);
+    setSelected(full);
+  };
+
+  return (
+    <div style={{background:C.bg,minHeight:"100vh",color:C.text}}>
+      {/* Nav bar */}
+      <div style={{background:C.surface,borderBottom:`1px solid ${C.border}`,padding:"0 24px",display:"flex",alignItems:"center",gap:0}}>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:C.accent,textTransform:"uppercase",marginRight:28,padding:"14px 0"}}>
+          Urban Street CRM
+        </div>
+        <div style={{display:"flex",gap:2,flex:1}}>
+          {[{key:"contacts",label:"CONTACTS"},{key:"bulk",label:"BULK SENDS"}].map(({key,label})=>(
+            <button key={key} onClick={()=>goTo(key)} style={{
+              background:"transparent",border:"none",cursor:"pointer",
+              padding:"14px 18px",fontFamily:"'JetBrains Mono',monospace",fontSize:11,
+              fontWeight:700,letterSpacing:"0.12em",color:view===key?C.accent:C.textMuted,
+              borderBottom:`2px solid ${view===key?C.accent:"transparent"}`,
+              marginBottom:-1,transition:"color .15s",
+            }}>{label}</button>
+          ))}
+        </div>
+        <button onClick={()=>goTo("settings")} title="Settings" style={{background:"transparent",border:"none",color:view==="settings"?C.accent:"#999",cursor:"pointer",fontSize:18,padding:"14px 4px",lineHeight:1,transition:"color .15s"}}
+          onMouseEnter={e=>e.currentTarget.style.color=C.accent} onMouseLeave={e=>e.currentTarget.style.color=view==="settings"?C.accent:"#999"}>⚙</button>
+      </div>
+      {/* Content */}
+      {view==="settings"
+        ? <SettingsPage onBack={()=>goTo("contacts")}/>
+        : view==="bulk"
+          ? <BulkSendsPage allContacts={contacts} preselectedContacts={bulkSendContacts}/>
+          : loading
+            ? <div className="us-loading"><div className="us-spinner"/>LOADING CONTACTS</div>
+            : error
+              ? <div className="us-loading" style={{color:"#ff4444"}}>ERROR: {error}</div>
+              : creatingNew
+                ? <NewContactForm onBack={()=>setCreatingNew(false)} onCreated={handleCreated}/>
+                : selected
+                  ? <ContactDetail contact={selected} onBack={()=>setSelected(null)} onSave={handleSave} onDelete={handleDelete} onSendEmail={handleBulkSendFromTable}/>
+                  : <ContactsTable contacts={contacts} onSelect={setSelected} onNew={()=>setCreatingNew(true)} onBulkSend={handleBulkSendFromTable}/>
+      }
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
