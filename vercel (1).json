@@ -1,0 +1,21 @@
+{
+  "rewrites": [
+    { "source": "/api/gmail-auth",      "destination": "/api/gmail-auth.js" },
+    { "source": "/api/gmail-sync",      "destination": "/api/gmail-sync.js" },
+    { "source": "/api/gmail-token",     "destination": "/api/gmail-token.js" },
+    { "source": "/api/gmail-scheduler", "destination": "/api/gmail-scheduler.js" },
+    { "source": "/api/send-blast",      "destination": "/api/send-blast.js" },
+    { "source": "/api/resend-webhook",  "destination": "/api/resend-webhook.js" },
+    { "source": "/api/unsubscribe",     "destination": "/api/unsubscribe.js" }
+  ],
+  "crons": [
+    {
+      "path": "/api/gmail-sync",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/gmail-scheduler",
+      "schedule": "*/30 * * * *"
+    }
+  ]
+}
