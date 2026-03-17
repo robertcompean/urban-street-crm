@@ -1,4 +1,4 @@
-<!DOCTYPE html>  
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -2661,7 +2661,6 @@ const BulkSendsPage = ({ allContacts, preselectedContacts }) => {
   const [schedDailyLimit, setSchedDailyLimit] = useState(50);
   const [schedWindowStart, setSchedWindowStart] = useState("09:00");
   const [schedWindowEnd, setSchedWindowEnd] = useState("17:00");
-  const [schedDays, setSchedDays] = useState(["Mon","Tue","Wed","Thu","Fri"]);
   const [schedSaving, setSchedSaving] = useState(false);
   const [schedSaved, setSchedSaved] = useState(false);
 
@@ -2746,7 +2745,6 @@ const BulkSendsPage = ({ allContacts, preselectedContacts }) => {
   const saveScheduledSend = async () => {
     if (!schedName.trim()) { alert("Give this scheduled send a name."); return; }
     if (!schedStart) { alert("Set a start date."); return; }
-    if (!schedDays.length) { alert("Select at least one send day."); return; }
     setSchedSaving(true);
     try {
       const config = mode === "template"
@@ -2763,11 +2761,10 @@ const BulkSendsPage = ({ allContacts, preselectedContacts }) => {
           recipient_ids: recipients.map(c => c.id),
           schedule: {
             start_date: schedStart,
+            end_date: schedEnd || null,
             daily_limit: schedDailyLimit,
             window_start: schedWindowStart,
             window_end: schedWindowEnd,
-            send_days: schedDays,
-            timezone: "America/Los_Angeles",
           },
           status: "scheduled",
           sends_completed: 0,
@@ -3367,9 +3364,15 @@ const BulkSendsPage = ({ allContacts, preselectedContacts }) => {
                       <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Campaign Name</div>
                       <input className="us-input" value={schedName} onChange={e=>setSchedName(e.target.value)} placeholder="e.g. Nov Outreach Wave 1" style={{fontSize:13,padding:"7px 10px"}}/>
                     </div>
-                    <div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                      <div>
                         <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Start Date</div>
                         <input type="date" className="us-input" value={schedStart} onChange={e=>setSchedStart(e.target.value)} style={{fontSize:13,padding:"7px 10px"}}/>
+                      </div>
+                      <div>
+                        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>End Date (opt)</div>
+                        <input type="date" className="us-input" value={schedEnd} onChange={e=>setSchedEnd(e.target.value)} style={{fontSize:13,padding:"7px 10px"}}/>
+                      </div>
                     </div>
                     <div>
                       <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Emails per Day</div>
@@ -3378,30 +3381,16 @@ const BulkSendsPage = ({ allContacts, preselectedContacts }) => {
                     </div>
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
                       <div>
-                        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Window Start (PST)</div>
+                        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Window Start</div>
                         <input type="time" className="us-input" value={schedWindowStart} onChange={e=>setSchedWindowStart(e.target.value)} style={{fontSize:13,padding:"7px 10px"}}/>
                       </div>
                       <div>
-                        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Window End (PST)</div>
+                        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:4}}>Window End</div>
                         <input type="time" className="us-input" value={schedWindowEnd} onChange={e=>setSchedWindowEnd(e.target.value)} style={{fontSize:13,padding:"7px 10px"}}/>
                       </div>
                     </div>
-                    <div>
-                      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:6}}>Send Days</div>
-                      <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                        {["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d=>{
-                          const on=schedDays.includes(d);
-                          return <button key={d} onClick={()=>setSchedDays(prev=>on?prev.filter(x=>x!==d):[...prev,d])} style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,padding:"5px 9px",borderRadius:3,border:`1px solid ${on?C.accent:C.border}`,background:on?"rgba(232,98,42,.1)":"transparent",color:on?C.accent:C.textMuted,cursor:"pointer",letterSpacing:"0.05em"}}>{d}</button>;
-                        })}
-                      </div>
-                    </div>
                     <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.textMuted,background:C.elevated,padding:"8px 10px",borderRadius:3}}>
-                      {(()=>{
-                        const daysPerWeek=schedDays.length||1;
-                        const sendDaysNeeded=Math.ceil(recipients.length/schedDailyLimit);
-                        const calDays=Math.ceil(sendDaysNeeded*(7/daysPerWeek));
-                        return `${recipients.length} recipients · ${schedDailyLimit}/day · ${schedDays.length?schedDays.join(" "):"no days selected"} · ~${calDays} calendar day${calDays!==1?"s":""}`;
-                      })()}
+                      {recipients.length} recipients · {schedDailyLimit}/day · ~{Math.ceil(recipients.length/schedDailyLimit)} day{Math.ceil(recipients.length/schedDailyLimit)!==1?"s":""}
                     </div>
                     <button className="us-btn us-save-btn" onClick={saveScheduledSend} disabled={schedSaving}
                       style={{justifyContent:"center"}}>
