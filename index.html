@@ -2398,7 +2398,7 @@ const SettingsPage = ({ onBack, allContacts }) => {
     } catch(e) { alert("Failed: "+e.message); }
   };
 
-  const TABS = ["signatures","templates","buckets","tags","sync"];
+  const TABS = ["signatures","templates","buckets","tags","sync","send rules"];
 
   return (
     <div className="us-detail" style={{maxWidth:860,margin:"0 auto",padding:"32px 24px"}}>
@@ -2576,6 +2576,7 @@ const SettingsPage = ({ onBack, allContacts }) => {
               <BulkGmailSync allContacts={allContacts}/>
             </div>
           )}
+          {tab === "send rules" && <SendRulesSettings/>}
         </>
       )}
     </div>
@@ -2614,9 +2615,74 @@ const UNSUB_FOOTER_HTML = (contactId) =>
     <a href="${UNSUB_DOMAIN}/api/unsubscribe?id=${contactId}" style="color:#999;">Unsubscribe</a>
   </div>`;
 
-const isSuppressed = (c) => {
+// ── Engagement suppression setting (localStorage)
+const ENGAGEMENT_SUPPRESSION_KEY = "us_engagement_suppression";
+const getEngagementSuppression = () => {
+  try {
+    const raw = localStorage.getItem(ENGAGEMENT_SUPPRESSION_KEY);
+    if (!raw) return { enabled: false, days: 30 };
+    return JSON.parse(raw);
+  } catch { return { enabled: false, days: 30 }; }
+};
+
+const SendRulesSettings = () => {
+  const [setting, setSetting] = useState(getEngagementSuppression);
+  const [saved, setSaved] = useState(false);
+  const update = (patch) => setSetting(prev => ({ ...prev, ...patch }));
+  const save = () => {
+    localStorage.setItem(ENGAGEMENT_SUPPRESSION_KEY, JSON.stringify(setting));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+  return (
+    <div style={{maxWidth:520}}>
+      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:C.accent,marginBottom:16}}>Engagement Suppression</div>
+      <div className="edit-section" style={{gap:20}}>
+        <div>
+          <div style={{fontSize:14,color:C.text,fontWeight:600,marginBottom:4}}>Skip recently engaged contacts</div>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted,lineHeight:1.6}}>
+            When enabled, contacts with email activity within the specified number of days will be automatically excluded from bulk sends and HTML blasts.
+          </div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:14}}>
+          <div onClick={()=>update({enabled:!setting.enabled})}
+            className={"us-switch"+(setting.enabled?" on":"")}
+            style={{cursor:"pointer",flexShrink:0}}/>
+          <span style={{fontSize:15,fontWeight:600,color:setting.enabled?C.text:C.textMuted}}>
+            {setting.enabled ? "Enabled" : "Disabled"}
+          </span>
+        </div>
+        {setting.enabled && (
+          <div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:C.textMuted,marginBottom:6}}>Suppress if engaged within</div>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <input type="number" min={1} max={365} value={setting.days}
+                onChange={e=>update({days:Math.max(1,parseInt(e.target.value)||1)})}
+                className="us-input" style={{width:100,textAlign:"center"}}/>
+              <span style={{fontSize:15,fontWeight:600,color:C.textMuted}}>days</span>
+            </div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.textMuted,marginTop:6}}>
+              Contacts whose last activity is within {setting.days} day{setting.days!==1?"s":""} will be excluded from all bulk sends.
+            </div>
+          </div>
+        )}
+        <button className="us-btn us-save-btn" onClick={save} style={{alignSelf:"flex-start"}}>
+          {saved ? "✓ SAVED" : "SAVE"}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const isSuppressed = (c, engagementDays) => {
   const status = String(c.email_status||"").toLowerCase();
-  return status === "bounced" || status === "complained" || status === "unsubscribed";
+  if (status === "bounced" || status === "complained" || status === "unsubscribed") return true;
+  if (engagementDays && c.last_activity_date) {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - engagementDays);
+    if (new Date(c.last_activity_date) >= cutoff) return true;
+  }
+  return false;
 };
 
 const BulkSendsPage = ({ allContacts, preselectedContacts }) => {
@@ -2624,6 +2690,8 @@ const BulkSendsPage = ({ allContacts, preselectedContacts }) => {
   const [templates, setTemplates] = useState([]);
   const [signatures, setSignatures] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [engSuppression] = useState(() => getEngagementSuppression());
+  const engDays = engSuppression.enabled ? engSuppression.days : null;
 
   // Step 0 — template or compose or html blast
   const [mode, setMode] = useState("template"); // "template" | "compose" | "blast"
@@ -2691,7 +2759,7 @@ const BulkSendsPage = ({ allContacts, preselectedContacts }) => {
 
   const filtered = (allContacts||[]).filter(c => {
     if (!c.email) return false;
-    if (isSuppressed(c)) return false;
+    if (isSuppressed(c, engDays)) return false;
     const q = search.toLowerCase();
     const nameMatch = !q || `${c.first_name||""} ${c.last_name||""} ${c.email||""} ${c.company||""}`.toLowerCase().includes(q);
     const contactTagNames = (c.contact_tags||[]).map(ct=>ct.tags?.name).filter(Boolean);
@@ -2700,6 +2768,13 @@ const BulkSendsPage = ({ allContacts, preselectedContacts }) => {
     const bucketMatch = selBuckets.length===0 || selBuckets.some(b=>contactBucketNames.includes(b));
     return nameMatch && tagMatch && bucketMatch;
   });
+
+  const engSuppressionCount = engDays
+    ? (allContacts||[]).filter(c => c.email && !isSuppressed(c) && c.last_activity_date && (() => {
+        const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - engDays);
+        return new Date(c.last_activity_date) >= cutoff;
+      })()).length
+    : 0;
 
   // When launched from table, skip the filter step
   useEffect(() => {
@@ -3134,6 +3209,11 @@ const BulkSendsPage = ({ allContacts, preselectedContacts }) => {
           <div style={{display:"grid",gridTemplateColumns:"1fr 260px",gap:24}}>
             <div>
               <SLabel>Filter Contacts</SLabel>
+              {engDays && engSuppressionCount > 0 && (
+                <div style={{background:"rgba(232,98,42,.06)",border:"1px solid rgba(232,98,42,.2)",borderRadius:3,padding:"8px 12px",marginBottom:12,fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.accent,letterSpacing:"0.08em"}}>
+                  ⚡ {engSuppressionCount} contact{engSuppressionCount!==1?"s":""} suppressed — active within {engDays} days
+                </div>
+              )}
               <input className="us-search" placeholder="Search name, email, company…" value={search}
                 onChange={e=>setSearch(e.target.value)} style={{width:"100%",marginBottom:14}}/>
 
