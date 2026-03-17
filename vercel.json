@@ -11,11 +11,15 @@
   "crons": [
     {
       "path": "/api/gmail-sync",
-      "schedule": "0 8 * * *"
+      "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/gmail-sync",
+      "schedule": "0 22 * * *"
     },
     {
       "path": "/api/gmail-scheduler",
-      "schedule": "0 9 * * *"
+      "schedule": "0 17 * * *"
     }
   ]
 }
