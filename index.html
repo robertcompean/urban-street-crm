@@ -2667,7 +2667,7 @@ const BulkSendsPage = ({ allContacts, preselectedContacts }) => {
 
   useEffect(() => {
     Promise.all([
-      supaFetch("/templates?order=name.asc"),
+      supaFetch("/templates?brand=eq.Urban Street&order=name.asc"),
       supaFetch("/signatures?order=name.asc"),
     ]).then(([t, s]) => {
       setTemplates(t||[]);
@@ -3507,6 +3507,194 @@ const BulkSendsPage = ({ allContacts, preselectedContacts }) => {
 };
 
 // ── App
+// ── Scheduled Sends Page
+const ScheduledSendsPage = () => {
+  const [sends, setSends] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(null);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const data = await supaFetch("/scheduled_sends?order=created_at.desc");
+      setSends(data || []);
+    } catch(e) { console.error(e); }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const cancelSend = async (id) => {
+    if (!confirm("Cancel this scheduled send?")) return;
+    await supaFetch(`/scheduled_sends?id=eq.${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: "cancelled" }),
+    });
+    load();
+  };
+
+  const deleteSend = async (id) => {
+    if (!confirm("Delete this scheduled send permanently?")) return;
+    await supaFetch(`/scheduled_sends?id=eq.${id}`, { method: "DELETE", headers: { Prefer: "" } });
+    setSends(prev => prev.filter(s => s.id !== id));
+    if (expanded === id) setExpanded(null);
+  };
+
+  const statusColor = (s) => ({
+    scheduled: "#2563eb",
+    running:   "#e8622a",
+    completed: "#16a34a",
+    cancelled: "#999",
+  }[s] || "#999");
+
+  const fmtDate = (iso) => {
+    if (!iso) return "—";
+    return new Date(iso).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" });
+  };
+
+  const fmtTime = (iso) => {
+    if (!iso) return "";
+    return new Date(iso).toLocaleTimeString("en-US", { hour:"numeric", minute:"2-digit", timeZoneName:"short" });
+  };
+
+  const dayLabels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+  return (
+    <div style={{padding:"32px 32px 48px",maxWidth:900,margin:"0 auto"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:24}}>
+        <div>
+          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,letterSpacing:"0.2em",color:C.accent,textTransform:"uppercase",marginBottom:4}}>Bulk Sends</div>
+          <div style={{fontSize:26,fontWeight:800,color:C.text,letterSpacing:"0.02em"}}>Scheduled Sends</div>
+        </div>
+        <button className="us-btn" onClick={load} style={{gap:6}}>↻ REFRESH</button>
+      </div>
+
+      {loading ? (
+        <div className="us-loading"><div className="us-spinner"/>LOADING</div>
+      ) : sends.length === 0 ? (
+        <div style={{textAlign:"center",padding:"80px 0",color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:12,letterSpacing:"0.1em"}}>
+          NO SCHEDULED SENDS YET
+        </div>
+      ) : (
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {sends.map(s => {
+            const sched = s.schedule || {};
+            const isExp = expanded === s.id;
+            const recipCount = (s.recipient_ids || []).length;
+            const pct = recipCount > 0 ? Math.round((s.sends_completed / recipCount) * 100) : 0;
+
+            return (
+              <div key={s.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:4,overflow:"hidden"}}>
+                {/* Row */}
+                <div
+                  onClick={() => setExpanded(isExp ? null : s.id)}
+                  style={{display:"flex",alignItems:"center",gap:16,padding:"14px 18px",cursor:"pointer"}}
+                >
+                  {/* Status dot */}
+                  <div style={{width:8,height:8,borderRadius:"50%",background:statusColor(s.status),flexShrink:0}}/>
+
+                  {/* Name + mode */}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontWeight:700,fontSize:15,color:C.text,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{s.name}</div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:C.textMuted,marginTop:2}}>
+                      {s.mode === "template" ? (s.config?.template_name || "Template") : s.mode === "blast" ? "HTML Blast" : "Compose"}
+                    </div>
+                  </div>
+
+                  {/* Recipients */}
+                  <div style={{textAlign:"right",minWidth:70}}>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,fontWeight:700,color:C.text}}>{s.sends_completed}/{recipCount}</div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.1em"}}>SENT</div>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div style={{width:80,flexShrink:0}}>
+                    <div style={{height:4,background:C.border,borderRadius:2,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:`${pct}%`,background:statusColor(s.status),borderRadius:2,transition:"width .3s"}}/>
+                    </div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,marginTop:3,textAlign:"right"}}>{pct}%</div>
+                  </div>
+
+                  {/* Status badge */}
+                  <div style={{
+                    fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.14em",
+                    textTransform:"uppercase",color:statusColor(s.status),
+                    border:`1px solid ${statusColor(s.status)}`,borderRadius:2,
+                    padding:"2px 8px",flexShrink:0,opacity: s.status==="cancelled"?0.6:1
+                  }}>{s.status}</div>
+
+                  {/* Chevron */}
+                  <div style={{color:C.textMuted,fontSize:11,flexShrink:0,transition:"transform .15s",transform:isExp?"rotate(180deg)":"rotate(0deg)"}}>▼</div>
+                </div>
+
+                {/* Expanded detail */}
+                {isExp && (
+                  <div style={{borderTop:`1px solid ${C.border}`,padding:"16px 18px 18px",display:"flex",flexDirection:"column",gap:14}}>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:12}}>
+                      {[
+                        ["Start Date", fmtDate(sched.start_date)],
+                        ["Daily Limit", sched.daily_limit ? `${sched.daily_limit} emails/day` : "—"],
+                        ["Window", sched.window_start && sched.window_end ? `${sched.window_start} – ${sched.window_end} PST` : "—"],
+                        ["Next Send", s.next_send_at ? `${fmtDate(s.next_send_at)} ${fmtTime(s.next_send_at)}` : "—"],
+                        ["Created", fmtDate(s.created_at)],
+                        ["Recipients", `${recipCount} contacts`],
+                      ].map(([label, val]) => (
+                        <div key={label}>
+                          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:C.textMuted,marginBottom:3}}>{label}</div>
+                          <div style={{fontSize:14,fontWeight:600,color:C.text}}>{val}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Send days */}
+                    {sched.send_days && sched.send_days.length > 0 && (
+                      <div>
+                        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:C.textMuted,marginBottom:6}}>Send Days</div>
+                        <div style={{display:"flex",gap:4}}>
+                          {dayLabels.map((d,i) => (
+                            <div key={d} style={{
+                              padding:"3px 8px",borderRadius:2,fontSize:11,
+                              fontFamily:"'JetBrains Mono',monospace",
+                              background: sched.send_days.includes(i) ? "rgba(232,98,42,.12)" : C.border,
+                              color: sched.send_days.includes(i) ? C.accent : C.textMuted,
+                              border: `1px solid ${sched.send_days.includes(i) ? "rgba(232,98,42,.3)" : C.border}`,
+                              fontWeight: sched.send_days.includes(i) ? 700 : 400,
+                            }}>{d}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Subject line if available */}
+                    {(s.config?.subject) && (
+                      <div>
+                        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:C.textMuted,marginBottom:3}}>Subject</div>
+                        <div style={{fontSize:14,color:C.text,fontStyle:"italic"}}>"{s.config.subject}"</div>
+                      </div>
+                    )}
+
+                    {/* Actions */}
+                    <div style={{display:"flex",gap:10,paddingTop:4}}>
+                      {s.status === "scheduled" && (
+                        <button className="us-btn" onClick={()=>cancelSend(s.id)} style={{fontSize:12,padding:"6px 14px"}}>
+                          ✕ CANCEL SEND
+                        </button>
+                      )}
+                      <button className="us-btn us-delete-btn" onClick={()=>deleteSend(s.id)} style={{fontSize:12,padding:"6px 14px"}}>
+                        DELETE
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 function App() {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -3584,7 +3772,7 @@ function App() {
           Urban Street CRM
         </div>
         <div style={{display:"flex",gap:2,flex:1}}>
-          {[{key:"contacts",label:"CONTACTS"},{key:"bulk",label:"BULK SENDS"}].map(({key,label})=>(
+          {[{key:"contacts",label:"CONTACTS"},{key:"bulk",label:"BULK SENDS"},{key:"scheduled",label:"SCHEDULED"}].map(({key,label})=>(
             <button key={key} onClick={()=>goTo(key)} style={{
               background:"transparent",border:"none",cursor:"pointer",
               padding:"14px 18px",fontFamily:"'JetBrains Mono',monospace",fontSize:11,
@@ -3603,7 +3791,9 @@ function App() {
       {/* Content */}
       {view==="settings"
         ? <SettingsPage onBack={()=>goTo("contacts")} allContacts={contacts}/>
-        : view==="bulk"
+        : view==="scheduled"
+          ? <ScheduledSendsPage/>
+          : view==="bulk"
           ? <BulkSendsPage allContacts={contacts} preselectedContacts={bulkSendContacts}/>
           : loading
             ? <div className="us-loading"><div className="us-spinner"/>LOADING CONTACTS</div>
