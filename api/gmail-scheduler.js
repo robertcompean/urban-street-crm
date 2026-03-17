@@ -60,8 +60,8 @@ async function getGmailAccessToken() {
 
   // Refresh
   const params = new URLSearchParams({
-    client_id: process.env.GOOGLE_CLIENT_ID,
-    client_secret: process.env.GOOGLE_CLIENT_SECRET,
+    client_id: process.env.GMAIL_CLIENT_ID,
+    client_secret: process.env.GMAIL_CLIENT_SECRET,
     refresh_token: stored.refresh_token,
     grant_type: "refresh_token",
   });
