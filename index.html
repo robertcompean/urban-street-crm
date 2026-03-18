@@ -890,13 +890,18 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
         if (form[k] !== undefined) payload[k] = form[k];
       });
       await supaFetch(`/contacts?id=eq.${contact.id}`, { method:"PATCH", body:JSON.stringify(payload) });
-      // Save custom field values
-      for (const [field_key, value] of Object.entries(customValues)) {
-        await supaFetch("/contact_custom_values", {
-          method:"POST",
-          headers:{ "Prefer":"resolution=merge-duplicates,return=representation" },
-          body:JSON.stringify({ contact_id:contact.id, field_key, value:value||"" }),
+      // Save custom field values — delete existing then re-insert
+      const keysToSave = Object.keys(customValues);
+      if (keysToSave.length > 0) {
+        await supaFetch(`/contact_custom_values?contact_id=eq.${contact.id}`, {
+          method:"DELETE", headers:{Prefer:""}
         });
+        for (const [field_key, value] of Object.entries(customValues)) {
+          await supaFetch("/contact_custom_values", {
+            method:"POST",
+            body:JSON.stringify({ contact_id:contact.id, field_key, value:value||"" }),
+          });
+        }
       }
       const data = await supaFetch(`/contacts?id=eq.${contact.id}&select=*,contact_tags(tag_id,tags(id,name)),contact_buckets(bucket_id,buckets(id,name))`);
       const updated = (data && data[0]) ? data[0] : {...contact,...form};
