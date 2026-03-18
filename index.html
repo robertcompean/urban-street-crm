@@ -859,6 +859,17 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
   const [toast, setToast] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [customFieldDefs, setCustomFieldDefs] = useState([]);
+  const [customValues, setCustomValues] = useState({}); // { field_key: value }
+
+  useEffect(() => {
+    supaFetch("/custom_field_defs?order=sort_order.asc,created_at.asc").then(defs => setCustomFieldDefs(defs||[]));
+    supaFetch(`/contact_custom_values?contact_id=eq.${contact.id}`).then(vals => {
+      const map = {};
+      (vals||[]).forEach(v => { map[v.field_key] = v.value; });
+      setCustomValues(map);
+    });
+  }, [contact.id]);
 
   const setField = (f,v) => setForm(prev=>({...prev,[f]:v}));
 
@@ -874,6 +885,14 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
         if (form[k] !== undefined) payload[k] = form[k];
       });
       await supaFetch(`/contacts?id=eq.${contact.id}`, { method:"PATCH", body:JSON.stringify(payload) });
+      // Save custom field values
+      for (const [field_key, value] of Object.entries(customValues)) {
+        await supaFetch("/contact_custom_values", {
+          method:"POST",
+          body:JSON.stringify({ contact_id:contact.id, field_key, value:value||"" }),
+          headers:{ "Prefer":"resolution=merge-duplicates" },
+        });
+      }
       const data = await supaFetch(`/contacts?id=eq.${contact.id}&select=*,contact_tags(tag_id,tags(id,name)),contact_buckets(bucket_id,buckets(id,name))`);
       const updated = (data && data[0]) ? data[0] : {...contact,...form};
       onSave?.(updated);
@@ -985,6 +1004,28 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
             <div className="edit-section-title">Notes</div>
             <textarea className="us-textarea" value={form.notes||""} onChange={e=>setField("notes",e.target.value)} placeholder="Notes about this contact…"/>
           </div>
+          {customFieldDefs.length > 0 && (
+            <div className="edit-section">
+              <div className="edit-section-title">Custom Fields</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                {customFieldDefs.map(f => (
+                  <div key={f.field_key}>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:C.textMuted,marginBottom:6}}>{f.label}</div>
+                    {f.field_type === "dropdown" ? (
+                      <select className="us-select" value={customValues[f.field_key]||""} onChange={e=>setCustomValues(p=>({...p,[f.field_key]:e.target.value}))}>
+                        <option value="">— Select —</option>
+                        {(f.options||[]).map(o=><option key={o} value={o}>{o}</option>)}
+                      </select>
+                    ) : f.field_type === "date" ? (
+                      <input type="date" className="us-input" value={customValues[f.field_key]||""} onChange={e=>setCustomValues(p=>({...p,[f.field_key]:e.target.value}))}/>
+                    ) : (
+                      <input className="us-input" value={customValues[f.field_key]||""} onChange={e=>setCustomValues(p=>({...p,[f.field_key]:e.target.value}))} placeholder={f.label}/>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div style={{display:"flex",justifyContent:"flex-end",gap:10,paddingTop:4}}>
             <button className="us-btn" onClick={handleCancel}>CANCEL</button>
             <button className="us-btn us-save-btn" onClick={handleSave} disabled={saving} style={{padding:"10px 32px",fontSize:15}}>
@@ -1047,6 +1088,19 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
               </div>
             ))}
           </div>
+
+          {customFieldDefs.length > 0 && (
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+              {customFieldDefs.map(f => (
+                <div key={f.field_key} className="us-field-card" style={{padding:"14px 16px"}}>
+                  <div className="us-section-label">{f.label}</div>
+                  <div style={{fontSize:14,fontWeight:600,color:customValues[f.field_key]?C.text:C.textMuted}}>
+                    {customValues[f.field_key]||"—"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {extras.length > 0 && (
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
@@ -2432,7 +2486,7 @@ const SettingsPage = ({ onBack, allContacts }) => {
     } catch(e) { alert("Failed: "+e.message); }
   };
 
-  const TABS = ["signatures","templates","buckets","tags","sync","send rules"];
+  const TABS = ["signatures","templates","buckets","tags","sync","send rules","custom fields"];
 
   return (
     <div className="us-detail" style={{maxWidth:860,margin:"0 auto",padding:"32px 24px"}}>
@@ -2611,6 +2665,7 @@ const SettingsPage = ({ onBack, allContacts }) => {
             </div>
           )}
           {tab === "send rules" && <SendRulesSettings/>}
+          {tab === "custom fields" && <CustomFieldsSettings/>}
         </>
       )}
     </div>
@@ -2648,6 +2703,119 @@ const UNSUB_FOOTER_HTML = (contactId) =>
     You received this because you are in Urban Street Ventures' contact list.
     <a href="${UNSUB_DOMAIN}/api/unsubscribe?id=${contactId}" style="color:#999;">Unsubscribe</a>
   </div>`;
+
+// ── Custom Fields Settings
+const CustomFieldsSettings = () => {
+  const [fields, setFields] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(null); // null | "new" | field obj
+  const [form, setForm] = useState({ label:"", field_type:"text", options:"" });
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const data = await supaFetch("/custom_field_defs?order=sort_order.asc,created_at.asc");
+    setFields(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const openNew = () => { setForm({ label:"", field_type:"text", options:"" }); setEditing("new"); };
+  const openEdit = (f) => { setForm({ label:f.label, field_type:f.field_type, options:(f.options||[]).join(", ") }); setEditing(f); };
+  const cancel = () => { setEditing(null); };
+
+  const toKey = (label) => label.toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"");
+
+  const save = async () => {
+    if (!form.label.trim()) { alert("Field label is required."); return; }
+    setSaving(true);
+    const opts = form.field_type === "dropdown"
+      ? form.options.split(",").map(s=>s.trim()).filter(Boolean)
+      : [];
+    if (editing === "new") {
+      const key = toKey(form.label);
+      await supaFetch("/custom_field_defs", {
+        method:"POST",
+        body:JSON.stringify({ label:form.label.trim(), field_key:`cf_${key}`, field_type:form.field_type, options:opts, sort_order:fields.length }),
+      });
+    } else {
+      await supaFetch(`/custom_field_defs?id=eq.${editing.id}`, {
+        method:"PATCH",
+        body:JSON.stringify({ label:form.label.trim(), field_type:form.field_type, options:opts }),
+      });
+    }
+    await load();
+    setEditing(null);
+    setSaving(false);
+  };
+
+  const deleteField = async (id) => {
+    if (!confirm("Delete this field? Existing values will also be removed.")) return;
+    await supaFetch(`/custom_field_defs?id=eq.${id}`, { method:"DELETE", headers:{Prefer:""} });
+    setFields(prev => prev.filter(f => f.id !== id));
+  };
+
+  if (loading) return <div className="us-loading"><div className="us-spinner"/>LOADING</div>;
+
+  return (
+    <div style={{maxWidth:600}}>
+      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:C.accent,marginBottom:16}}>Custom Fields</div>
+      {editing ? (
+        <div className="edit-section" style={{gap:16}}>
+          <div className="edit-section-title">{editing==="new"?"NEW FIELD":"EDIT FIELD"}</div>
+          <div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:C.textMuted,marginBottom:6}}>Field Label</div>
+            <input className="us-input" value={form.label} onChange={e=>setForm(p=>({...p,label:e.target.value}))} placeholder="e.g. Property Type"/>
+            {editing==="new" && form.label && (
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.textMuted,marginTop:4}}>Key: cf_{toKey(form.label)}</div>
+            )}
+          </div>
+          <div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:C.textMuted,marginBottom:6}}>Field Type</div>
+            <select className="us-select" value={form.field_type} onChange={e=>setForm(p=>({...p,field_type:e.target.value}))}>
+              <option value="text">Text</option>
+              <option value="dropdown">Dropdown</option>
+              <option value="date">Date</option>
+            </select>
+          </div>
+          {form.field_type === "dropdown" && (
+            <div>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:C.textMuted,marginBottom:6}}>Options (comma-separated)</div>
+              <input className="us-input" value={form.options} onChange={e=>setForm(p=>({...p,options:e.target.value}))} placeholder="Option 1, Option 2, Option 3"/>
+            </div>
+          )}
+          <div style={{display:"flex",gap:10}}>
+            <button className="us-btn us-save-btn" onClick={save} disabled={saving}>{saving?"SAVING…":"SAVE FIELD"}</button>
+            <button className="us-btn" onClick={cancel}>CANCEL</button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <button className="us-btn us-save-btn" onClick={openNew} style={{marginBottom:20,padding:"8px 20px"}}>+ NEW FIELD</button>
+          {fields.length === 0 ? (
+            <div style={{color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:12,padding:"20px 0"}}>No custom fields yet.</div>
+          ) : (
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {fields.map(f => (
+                <div key={f.id} style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:4,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:700,fontSize:15,color:C.text}}>{f.label}</div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.1em",textTransform:"uppercase",marginTop:2}}>
+                      {f.field_type}{f.field_type==="dropdown"&&f.options?.length?` · ${f.options.join(", ")}`:""}
+                    </div>
+                  </div>
+                  <button className="us-btn" onClick={()=>openEdit(f)} style={{fontSize:11,padding:"5px 12px"}}>EDIT</button>
+                  <button className="us-btn us-delete-btn" onClick={()=>deleteField(f.id)} style={{fontSize:11,padding:"5px 12px"}}>DELETE</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
 
 // ── Engagement suppression setting (localStorage)
 const ENGAGEMENT_SUPPRESSION_KEY = "us_engagement_suppression";
