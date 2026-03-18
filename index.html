@@ -195,8 +195,13 @@ const AiScoreBadge = ({ score, size="md" }) => {
 
 
 const SubBadge = ({ value }) => {
-  const color = subColor(value);
-  const label = value == null || value === "" ? "UNKNOWN" : String(value).toUpperCase();
+  const s = String(value||"").toLowerCase().trim();
+  const normalized = (s==="true"||s==="active"||s==="subscribed") ? "subscribed"
+    : (s==="false"||s==="unsubscribed") ? "unsubscribed"
+    : s==="pending" ? "pending"
+    : s || null;
+  const color = subColor(normalized);
+  const label = normalized ? normalized.toUpperCase() : "UNKNOWN";
   return (
     <div className="us-field-card" style={{padding:"14px 16px"}}>
       <div className="us-section-label">Subscription Status</div>
@@ -1637,7 +1642,15 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
   // Derive available tag names from contacts
   const allTagNames = [...new Set(contacts.flatMap(c => (c.contact_tags||[]).map(ct => ct.tags?.name).filter(Boolean)))].sort();
   const allBucketNames = [...new Set(contacts.flatMap(c => (c.contact_buckets||[]).map(cb => cb.buckets?.name).filter(Boolean)))].sort();
-  const allStatuses = [...new Set(contacts.map(c => c.subscription_status||c.subscribed||c.sub_status).filter(Boolean))].sort();
+  const normalizeStatus = (v) => {
+    const s = String(v||"").toLowerCase().trim();
+    if (s==="true"||s==="active"||s==="subscribed") return "subscribed";
+    if (s==="false"||s==="unsubscribed") return "unsubscribed";
+    if (s==="pending") return "pending";
+    if (!s) return null;
+    return s;
+  };
+  const allStatuses = [...new Set(contacts.map(c => normalizeStatus(c.subscription_status||c.subscribed||c.sub_status)).filter(Boolean))].sort();
 
   const toggleFilter = (arr, setArr, val) => setArr(prev => prev.includes(val) ? prev.filter(v=>v!==val) : [...prev, val]);
   const clearAllFilters = () => { setFilterBuckets([]); setFilterTags([]); setFilterStatus([]); };
@@ -1725,7 +1738,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
       if (!filterTags.every(t => cTagNames.includes(t))) return false;
     }
     if (filterStatus.length > 0) {
-      const cStatus = String(c.subscription_status||c.subscribed||c.sub_status||"").toLowerCase();
+      const cStatus = normalizeStatus(c.subscription_status||c.subscribed||c.sub_status||"");
       if (!filterStatus.includes(cStatus)) return false;
     }
     return true;
@@ -1744,7 +1757,12 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
 
   const renderCell = (c, key) => {
     const name = [c.first_name,c.last_name].filter(Boolean).join(" ")||c.name||c.full_name||"—";
-    const subStatus = c.subscription_status||c.subscribed||c.sub_status;
+    const rawStatus = c.subscription_status||c.subscribed||c.sub_status;
+    const s = String(rawStatus||"").toLowerCase().trim();
+    const subStatus = (s==="true"||s==="active"||s==="subscribed") ? "subscribed"
+      : (s==="false"||s==="unsubscribed") ? "unsubscribed"
+      : s==="pending" ? "pending"
+      : s || null;
     const color = subColor(subStatus);
     switch(key) {
       case "name": return <td key={key} style={{fontWeight:700,fontSize:15,color:C.text}}>{name}</td>;
