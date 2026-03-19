@@ -1332,7 +1332,7 @@ const DEFAULT_VISIBLE = ["name","email","cell","bucket","status","last_activity"
 const CSV_FIELD_MAP = [
   { key: "first_name", label: "First Name", aliases: ["first name","firstname","first_name","fname"] },
   { key: "last_name", label: "Last Name", aliases: ["last name","lastname","last_name","lname","surname"] },
-  { key: "email", label: "Email", aliases: ["email","work email","workemail","email address","emails"] },
+  { key: "email", label: "Email", aliases: ["email","work email","workemail","email address","emails","email ids","email id"] },
   { key: "cell", label: "Cell Phone", aliases: ["mobile","cell","cell phone","cellphone","mobile phone"] },
   { key: "landline", label: "Landline", aliases: ["work","landline","work phone","office phone","phone"] },
   { key: "company", label: "Company", aliases: ["company","account","organization","employer"] },
@@ -1341,7 +1341,10 @@ const CSV_FIELD_MAP = [
   { key: "state", label: "State", aliases: ["state"] },
   { key: "zip", label: "Zip", aliases: ["zipcode","zip","zip code","postal code"] },
   { key: "notes", label: "Notes", aliases: ["notes","recent note","note","comments"] },
-  { key: "subscription_status", label: "Subscription Status", aliases: ["subscription status","subscriptionstatus"] },
+  { key: "last_activity_date", label: "Last Activity Date", aliases: ["last activity date","last activity","last_activity_date","last_activity"] },
+  { key: "bucket", label: "Bucket", aliases: ["bucket type","bucket","bucket_type"] },
+  { key: "tags", label: "Tags", aliases: ["tags","tag"] },
+  { key: "subscription_status", label: "Subscription Status", aliases: ["subscription status","subscriptionstatus","subscription_status"] },
   { key: "cs_responsiveness", label: "CS - Responsiveness", aliases: ["cs - responsiveness","cs-responsiveness","responsiveness"] },
   { key: "cs_incoming_ads", label: "CS - Incoming Ads", aliases: ["cs - incoming ads","cs-incoming ads","incoming ads"] },
   { key: "cs_done_deal", label: "CS - Done Deal", aliases: ["cs - done deal","cs-done deal","done deal"] },
@@ -1416,21 +1419,72 @@ const CsvImportModal = ({ onClose, onImported }) => {
       `${(c.first_name||"").toLowerCase().trim()}|${(c.last_name||"").toLowerCase().trim()}`
     ));
 
+    // Pre-load all buckets and tags so we can look them up by name
+    let allBuckets = [], allTags = [];
+    try {
+      allBuckets = await supaFetch("/buckets?order=name.asc") || [];
+      allTags = await supaFetch("/tags?order=name.asc") || [];
+    } catch(e) {}
+
+    const getBucketId = async (name) => {
+      const trimmed = name.trim();
+      let b = allBuckets.find(x => x.name.toLowerCase() === trimmed.toLowerCase());
+      if (!b) {
+        const res = await supaFetch("/buckets", { method:"POST", body:JSON.stringify({ name:trimmed }) });
+        b = Array.isArray(res) ? res[0] : res;
+        if (b) allBuckets.push(b);
+      }
+      return b?.id;
+    };
+
+    const getTagId = async (name) => {
+      const trimmed = name.trim();
+      let t = allTags.find(x => x.name.toLowerCase() === trimmed.toLowerCase());
+      if (!t) {
+        const res = await supaFetch("/tags", { method:"POST", body:JSON.stringify({ name:trimmed }) });
+        t = Array.isArray(res) ? res[0] : res;
+        if (t) allTags.push(t);
+      }
+      return t?.id;
+    };
+
+    const CONTACT_FIELDS = ["first_name","last_name","email","cell","landline","company","address","city","state","zip","notes","last_activity_date","subscription_status","cs_responsiveness","cs_incoming_ads","cs_done_deal"];
+
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       const contact = {};
+      let bucketName = null, tagNames = [];
+
       Object.entries(mapping).forEach(([csvCol, field]) => {
-        if (field && row[csvCol]) contact[field] = row[csvCol];
+        if (!field || !row[csvCol]) return;
+        if (field === "bucket") { bucketName = row[csvCol]; return; }
+        if (field === "tags") { tagNames = row[csvCol].split(",").map(t=>t.trim()).filter(Boolean); return; }
+        if (CONTACT_FIELDS.includes(field)) contact[field] = row[csvCol];
       });
+
       if (!contact.first_name && !contact.last_name && !contact.email) { skipped++; continue; }
 
-      // Check for duplicate
+      // Duplicate check
       const key = `${(contact.first_name||"").toLowerCase().trim()}|${(contact.last_name||"").toLowerCase().trim()}`;
       if (existingKeys.has(key)) { skipped++; continue; }
 
       try {
-        await supaFetch("/contacts", { method: "POST", body: JSON.stringify(contact) });
-        existingKeys.add(key); // prevent duplicate within same import
+        const res = await supaFetch("/contacts", { method:"POST", body:JSON.stringify(contact) });
+        const created = Array.isArray(res) ? res[0] : res;
+        existingKeys.add(key);
+
+        if (created?.id) {
+          // Assign bucket
+          if (bucketName) {
+            const bucketId = await getBucketId(bucketName);
+            if (bucketId) await supaFetch("/contact_buckets", { method:"POST", body:JSON.stringify({ contact_id:created.id, bucket_id:bucketId }) });
+          }
+          // Assign tags
+          for (const tagName of tagNames) {
+            const tagId = await getTagId(tagName);
+            if (tagId) await supaFetch("/contact_tags", { method:"POST", body:JSON.stringify({ contact_id:created.id, tag_id:tagId }) });
+          }
+        }
         success++;
       } catch(e) { failed++; }
       setProgress(Math.round((i + 1) / rows.length * 100));
