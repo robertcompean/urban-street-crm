@@ -1415,9 +1415,7 @@ const CsvImportModal = ({ onClose, onImported }) => {
       existing = all;
     } catch(e) {}
 
-    const existingKeys = new Set(existing.map(c =>
-      `${(c.first_name||"").toLowerCase().trim()}|${(c.last_name||"").toLowerCase().trim()}`
-    ));
+    const existingKeys = new Set(existing.map(c => (c.email||"").toLowerCase().trim()).filter(Boolean));
 
     // Pre-load all buckets and tags so we can look them up by name
     let allBuckets = [], allTags = [];
@@ -1464,15 +1462,14 @@ const CsvImportModal = ({ onClose, onImported }) => {
 
       if (!contact.first_name && !contact.last_name && !contact.email) { skipped++; continue; }
 
-      // Duplicate check
-      const key = `${(contact.first_name||"").toLowerCase().trim()}|${(contact.last_name||"").toLowerCase().trim()}`;
-      if (existingKeys.has(key)) { skipped++; continue; }
+      // Duplicate check by email
+      const key = (contact.email||"").toLowerCase().trim();
+      if (key && existingKeys.has(key)) { skipped++; continue; }
+      if (key) existingKeys.add(key);
 
       try {
         const res = await supaFetch("/contacts", { method:"POST", body:JSON.stringify(contact) });
         const created = Array.isArray(res) ? res[0] : res;
-        existingKeys.add(key);
-
         if (created?.id) {
           // Assign bucket
           if (bucketName) {
