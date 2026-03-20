@@ -1685,6 +1685,8 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
   const [filterBuckets, setFilterBuckets] = useState([]);
   const [filterTags, setFilterTags] = useState([]);
   const [filterStatus, setFilterStatus] = useState([]);
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 150;
   const filterRef = useRef(null);
 
   useEffect(() => {
@@ -1728,8 +1730,8 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
   };
   const allStatuses = [...new Set(contacts.map(c => normalizeStatus(c.subscription_status||c.subscribed||c.sub_status)).filter(Boolean))].sort();
 
-  const toggleFilter = (arr, setArr, val) => setArr(prev => prev.includes(val) ? prev.filter(v=>v!==val) : [...prev, val]);
-  const clearAllFilters = () => { setFilterBuckets([]); setFilterTags([]); setFilterStatus([]); };
+  const toggleFilter = (arr, setArr, val) => { setArr(prev => prev.includes(val) ? prev.filter(v=>v!==val) : [...prev, val]); setPage(0); };
+  const clearAllFilters = () => { setFilterBuckets([]); setFilterTags([]); setFilterStatus([]); setPage(0); };
   const activeFilterCount = filterBuckets.length + filterTags.length + filterStatus.length;
 
   // ── Bulk selection
@@ -1825,10 +1827,11 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
     return sortDir === "asc" ? cmp : -cmp;
   });
 
-  const allSelected = filtered.length > 0 && filtered.every(c=>selectedIds.includes(c.id));
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const someSelected = selectedIds.length > 0;
 
-  const orderedCols = colOrder.map(k => ALL_COLUMNS.find(c=>c.key===k)).filter(Boolean);
+  const allSelected = filtered.length > 0 && filtered.every(c=>selectedIds.includes(c.id));
   const visibleOrdered = orderedCols.filter(c => visibleCols.includes(c.key));
 
   const renderCell = (c, key) => {
@@ -1871,8 +1874,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
           <h1 style={{fontSize:36,fontWeight:900,lineHeight:1,letterSpacing:"-0.02em",color:C.text}}>CONTACTS</h1>
         </div>
         <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
-          <div className="us-mono" style={{fontSize:12,color:C.textMuted}}>{filtered.length} / {contacts.length}</div>
-          {/* Filter button */}
+          <div className="us-mono" style={{fontSize:12,color:C.textMuted}}>{filtered.length} / {contacts.length}</div>          {/* Filter button */}
           <div style={{position:"relative"}} ref={filterRef}>
             <button className="us-btn" onClick={()=>setShowFilters(v=>!v)} style={{padding:"8px 12px",fontSize:12,borderColor: activeFilterCount>0?C.accent:"#252525",color: activeFilterCount>0?C.accent:"#888"}}>
               ⊟ FILTER{activeFilterCount>0?` (${activeFilterCount})`:""}
@@ -1959,7 +1961,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
           <button className="us-btn" onClick={() => setShowImport(true)} style={{whiteSpace:"nowrap"}}>⬆ IMPORT CSV</button>
           <button className="us-btn" onClick={() => exportCSV(filtered)} style={{whiteSpace:"nowrap"}}>⬇ EXPORT CSV</button>
           <button className="us-btn us-edit-contact-btn" onClick={onNew} style={{whiteSpace:"nowrap"}}>+ NEW CONTACT</button>
-          <input className="us-search" placeholder="Search contacts…" value={search} onChange={e=>setSearch(e.target.value)}/>
+          <input className="us-search" placeholder="Search contacts…" value={search} onChange={e=>{setSearch(e.target.value);setPage(0);}}/>
         </div>
       </div>
       {/* Active filter pills */}
@@ -2028,7 +2030,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
             </tr>
           </thead>
           <tbody>
-            {filtered.map(c => {
+            {paginated.map(c => {
               const isChecked = selectedIds.includes(c.id);
               return (
                 <tr key={c.id} onClick={()=>onSelect(c)} style={{background: isChecked?"rgba(232,255,71,0.04)":""}}>
@@ -2049,7 +2051,18 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
         </table>
       </div>
 
-      {/* Bulk Tag Modal */}
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,padding:"16px 0",borderTop:`1px solid ${C.border}`}}>
+          <button className="us-btn" onClick={()=>setPage(0)} disabled={page===0} style={{padding:"6px 12px",fontSize:11}}>«</button>
+          <button className="us-btn" onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} style={{padding:"6px 12px",fontSize:11}}>‹ PREV</button>
+          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted}}>
+            Page {page+1} of {totalPages} · {filtered.length} contacts
+          </span>
+          <button className="us-btn" onClick={()=>setPage(p=>Math.min(totalPages-1,p+1))} disabled={page===totalPages-1} style={{padding:"6px 12px",fontSize:11}}>NEXT ›</button>
+          <button className="us-btn" onClick={()=>setPage(totalPages-1)} disabled={page===totalPages-1} style={{padding:"6px 12px",fontSize:11}}>»</button>
+        </div>
+      )}
       {bulkAction==='tag' && (
         <div className="us-modal-overlay">
           <div className="us-modal" style={{maxWidth:480,textAlign:"left"}}>
