@@ -1464,7 +1464,27 @@ const CsvImportModal = ({ onClose, onImported }) => {
 
       // Duplicate check by email
       const key = (contact.email||"").toLowerCase().trim();
-      if (key && existingKeys.has(key)) { skipped++; continue; }
+      if (key && existingKeys.has(key)) {
+        // Contact already exists — just add the new bucket if mapped
+        if (bucketName) {
+          try {
+            const existing = await supaFetch(`/contacts?email=eq.${encodeURIComponent(key)}&select=id`);
+            const existingId = existing?.[0]?.id;
+            if (existingId) {
+              const bucketId = await getBucketId(bucketName);
+              if (bucketId) {
+                // Only add if not already assigned
+                const already = await supaFetch(`/contact_buckets?contact_id=eq.${existingId}&bucket_id=eq.${bucketId}&select=id`);
+                if (!already?.length) {
+                  await supaFetch("/contact_buckets", { method:"POST", body:JSON.stringify({ contact_id:existingId, bucket_id:bucketId }) });
+                }
+              }
+            }
+          } catch(e) { console.warn("Bucket merge error:", e); }
+        }
+        skipped++;
+        continue;
+      }
       if (key) existingKeys.add(key);
 
       try {
