@@ -1416,6 +1416,9 @@ const CsvImportModal = ({ onClose, onImported }) => {
     } catch(e) {}
 
     const existingKeys = new Set(existing.map(c => (c.email||"").toLowerCase().trim()).filter(Boolean));
+    // Build email→id map for bucket merging
+    const emailToId = {};
+    existing.forEach(c => { if (c.email) emailToId[c.email.toLowerCase().trim()] = c.id; });
 
     // Pre-load all buckets and tags so we can look them up by name
     let allBuckets = [], allTags = [];
@@ -1468,8 +1471,7 @@ const CsvImportModal = ({ onClose, onImported }) => {
         // Contact already exists — add any new buckets
         if (bucketNames.length > 0) {
           try {
-            const existing = await supaFetch(`/contacts?email=eq.${encodeURIComponent(key)}&select=id`);
-            const existingId = existing?.[0]?.id;
+            const existingId = emailToId[key];
             if (existingId) {
               for (const bName of bucketNames) {
                 const bucketId = await getBucketId(bName);
@@ -1509,7 +1511,6 @@ const CsvImportModal = ({ onClose, onImported }) => {
     }
     setResults({ success, failed, skipped });
     setStep("done");
-    onImported();
   };
 
   return (
@@ -1598,7 +1599,7 @@ const CsvImportModal = ({ onClose, onImported }) => {
               {results.failed > 0 && <div style={{color:"#cc2222"}}>✕ {results.failed} failed</div>}
               {results.skipped > 0 && <div>— {results.skipped} skipped (duplicates or no name/email)</div>}
             </div>
-            <button className="us-btn us-save-btn" onClick={onClose} style={{marginTop:20}}>DONE</button>
+            <button className="us-btn us-save-btn" onClick={()=>{onImported();onClose();}} style={{marginTop:20}}>DONE</button>
           </div>
         )}
       </div>
