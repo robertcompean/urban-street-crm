@@ -1832,6 +1832,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
   const someSelected = selectedIds.length > 0;
 
   const allSelected = filtered.length > 0 && filtered.every(c=>selectedIds.includes(c.id));
+  const orderedCols = colOrder.map(k => ALL_COLUMNS.find(c=>c.key===k)).filter(Boolean);
   const visibleOrdered = orderedCols.filter(c => visibleCols.includes(c.key));
 
   const renderCell = (c, key) => {
