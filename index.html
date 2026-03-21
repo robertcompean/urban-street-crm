@@ -1415,10 +1415,17 @@ const CsvImportModal = ({ onClose, onImported }) => {
       existing = all;
     } catch(e) {}
 
-    const existingKeys = new Set(existing.map(c => (c.email||"").toLowerCase().trim()).filter(Boolean));
-    // Build email→id map for bucket merging
+    // Build email→id map — split comma-separated stored emails so each maps individually
+    const existingKeys = new Set();
     const emailToId = {};
-    existing.forEach(c => { if (c.email) emailToId[c.email.toLowerCase().trim()] = c.id; });
+    existing.forEach(c => {
+      if (!c.email) return;
+      const parts = c.email.split(',').map(e => e.toLowerCase().trim()).filter(Boolean);
+      parts.forEach(e => {
+        existingKeys.add(e);
+        if (!emailToId[e]) emailToId[e] = c.id;
+      });
+    });
 
     // Pre-load all buckets and tags so we can look them up by name
     let allBuckets = [], allTags = [];
