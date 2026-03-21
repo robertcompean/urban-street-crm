@@ -2053,7 +2053,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
                     <span style={{display:"inline-flex",alignItems:"center",gap:5}}>
                       {col.label}
                       {sortable && (
-                        <span style={{fontSize:8,opacity: active ? 1 : 0.3, color: active ? C.accent : C.textSub, lineHeight:1}}>
+                        <span style={{fontSize:12,opacity: active ? 1 : 0.4, color: active ? C.accent : C.textSub, lineHeight:1}}>
                           {active ? (sortDir === "asc" ? "▲" : "▼") : "⬍"}
                         </span>
                       )}
@@ -2089,13 +2089,13 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
       {/* Pagination */}
       {totalPages > 1 && (
         <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,padding:"16px 0",borderTop:`1px solid ${C.border}`}}>
-          <button className="us-btn" onClick={()=>setPage(0)} disabled={page===0} style={{padding:"6px 12px",fontSize:12,color:"#444",borderColor:"#aaa"}}>«</button>
-          <button className="us-btn" onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} style={{padding:"6px 12px",fontSize:12,color:"#444",borderColor:"#aaa"}}>‹ PREV</button>
+          <button className="us-btn" onClick={()=>setPage(0)} disabled={page===0} style={{padding:"6px 12px",fontSize:16,color:"#444",borderColor:"#aaa"}}>«</button>
+          <button className="us-btn" onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} style={{padding:"6px 12px",fontSize:16,color:"#444",borderColor:"#aaa"}}>‹ PREV</button>
           <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:"#333",fontWeight:500}}>
             Page {page+1} of {totalPages} · {filtered.length} contacts
           </span>
-          <button className="us-btn" onClick={()=>setPage(p=>Math.min(totalPages-1,p+1))} disabled={page===totalPages-1} style={{padding:"6px 12px",fontSize:12,color:"#444",borderColor:"#aaa"}}>NEXT ›</button>
-          <button className="us-btn" onClick={()=>setPage(totalPages-1)} disabled={page===totalPages-1} style={{padding:"6px 12px",fontSize:12,color:"#444",borderColor:"#aaa"}}>»</button>
+          <button className="us-btn" onClick={()=>setPage(p=>Math.min(totalPages-1,p+1))} disabled={page===totalPages-1} style={{padding:"6px 12px",fontSize:16,color:"#444",borderColor:"#aaa"}}>NEXT ›</button>
+          <button className="us-btn" onClick={()=>setPage(totalPages-1)} disabled={page===totalPages-1} style={{padding:"6px 12px",fontSize:16,color:"#444",borderColor:"#aaa"}}>»</button>
         </div>
       )}
       {bulkAction==='tag' && (
