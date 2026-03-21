@@ -1486,7 +1486,7 @@ const CsvImportModal = ({ onClose, onImported }) => {
           try {
             const existingId = emailToId[key];
             if (existingId) {
-              const already = await supaFetch(`/contact_buckets?contact_id=eq.${existingId}&bucket_id=eq.${defaultBucketId}&select=id`);
+              const already = await supaFetch(`/contact_buckets?contact_id=eq.${existingId}&bucket_id=eq.${defaultBucketId}&select=contact_id`);
               if (!already?.length) {
                 await supaFetch("/contact_buckets", { method:"POST", body:JSON.stringify({ contact_id:existingId, bucket_id:defaultBucketId }) });
               }
@@ -1500,7 +1500,7 @@ const CsvImportModal = ({ onClose, onImported }) => {
               for (const bName of bucketsToAssign) {
                 const bucketId = await getBucketId(bName);
                 if (bucketId) {
-                  const already = await supaFetch(`/contact_buckets?contact_id=eq.${existingId}&bucket_id=eq.${bucketId}&select=id`);
+                  const already = await supaFetch(`/contact_buckets?contact_id=eq.${existingId}&bucket_id=eq.${bucketId}&select=contact_id`);
                   if (!already?.length) {
                     await supaFetch("/contact_buckets", { method:"POST", body:JSON.stringify({ contact_id:existingId, bucket_id:bucketId }) });
                   }
