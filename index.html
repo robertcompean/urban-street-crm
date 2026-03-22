@@ -3185,6 +3185,7 @@ const BulkSendsPage = ({ allContacts, preselectedContacts }) => {
   const [search, setSearch] = useState("");
   const [selTags, setSelTags] = useState([]);
   const [selBuckets, setSelBuckets] = useState([]);
+  const [exclBuckets, setExclBuckets] = useState([]);
 
   // Step 2 — recipients locked in
   const [recipients, setRecipients] = useState([]);
@@ -3242,7 +3243,8 @@ const BulkSendsPage = ({ allContacts, preselectedContacts }) => {
     const contactBucketNames = (c.contact_buckets||[]).map(cb=>cb.buckets?.name).filter(Boolean);
     const tagMatch = selTags.length===0 || selTags.every(t=>contactTagNames.includes(t));
     const bucketMatch = selBuckets.length===0 || selBuckets.some(b=>contactBucketNames.includes(b));
-    return nameMatch && tagMatch && bucketMatch;
+    const bucketExclude = exclBuckets.length>0 && exclBuckets.some(b=>contactBucketNames.includes(b));
+    return nameMatch && tagMatch && bucketMatch && !bucketExclude;
   });
 
   const engSuppressionCount = engDays
@@ -3756,6 +3758,24 @@ const BulkSendsPage = ({ allContacts, preselectedContacts }) => {
                 </div>
               )}
 
+              {allBucketNames.length>0 && (
+                <div style={{marginBottom:16}}>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:C.red,marginBottom:8}}>Exclude Bucket</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {allBucketNames.map(b=>(
+                      <span key={b} onClick={()=>setExclBuckets(p=>p.includes(b)?p.filter(x=>x!==b):[...p,b])}
+                        style={{display:"inline-flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:12,fontSize:12,fontFamily:"'JetBrains Mono',monospace",letterSpacing:"0.04em",cursor:"pointer",
+                          border:`1px solid ${exclBuckets.includes(b)?"#cc2222":"#d0d0d5"}`,
+                          background:exclBuckets.includes(b)?"rgba(204,34,34,0.08)":"transparent",
+                          color:exclBuckets.includes(b)?"#cc2222":"#888",transition:"all .15s"}}>
+                        {exclBuckets.includes(b)?"✕ "+b:"– "+b}
+                        {exclBuckets.includes(b) && <span style={{cursor:"pointer",opacity:.6,fontSize:14,lineHeight:1}} onClick={e=>{e.stopPropagation();setExclBuckets(p=>p.filter(x=>x!==b));}}>×</span>}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div style={{border:`1px solid ${C.border}`,borderRadius:4,overflow:"hidden"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 14px",background:C.elevated,borderBottom:`1px solid ${C.border}`}}>
                   <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,letterSpacing:"0.1em",textTransform:"uppercase",color:C.textMuted}}>Matching Contacts</span>
@@ -3793,14 +3813,15 @@ const BulkSendsPage = ({ allContacts, preselectedContacts }) => {
                   {label:"Has Email", val:`${filtered.length} / ${(allContacts||[]).length}`},
                   selTags.length>0&&{label:"Tag Filters", val:selTags.join(", ")},
                   selBuckets.length>0&&{label:"Bucket Filters", val:selBuckets.join(", ")},
+                  exclBuckets.length>0&&{label:"Excluding Buckets", val:exclBuckets.join(", ")},
                 ].filter(Boolean).map(({label,val,accent})=>(
                   <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${C.border}`}}>
                     <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.textMuted,letterSpacing:"0.08em",textTransform:"uppercase"}}>{label}</span>
                     <span style={{fontSize:14,fontWeight:700,color:accent?C.accent:C.text}}>{val}</span>
                   </div>
                 ))}
-                {(selTags.length>0||selBuckets.length>0||search) && (
-                  <button className="us-btn" onClick={()=>{setSelTags([]);setSelBuckets([]);setSearch("");}}
+                {(selTags.length>0||selBuckets.length>0||exclBuckets.length>0||search) && (
+                  <button className="us-btn" onClick={()=>{setSelTags([]);setSelBuckets([]);setExclBuckets([]);setSearch("");}}
                     style={{marginTop:12,width:"100%",justifyContent:"center",fontSize:10}}>✕ CLEAR FILTERS</button>
                 )}
               </div>
