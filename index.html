@@ -1001,7 +1001,7 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
               <ESelect label="CS - Responsiveness" field="cs_responsiveness" form={form} onChange={setField} options={["Responsive","Unresponsive","Attempted"]}/>
               <ESelect label="CS - Incoming Ads" field="cs_incoming_ads" form={form} onChange={setField} options={["Yes","No"]}/>
-              <ESelect label="CS - Done Deal" field="cs_done_deal" form={form} onChange={setField} options={["Yes","No"]}/>
+              <ESelect label="CS - Done Deal" field="cs_done_deal" form={form} onChange={setField} options={["Done 1+","Attempted","No"]}/>
             </div>
           </div>
           <div className="edit-section">
