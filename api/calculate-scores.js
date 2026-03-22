@@ -1,11 +1,12 @@
 const SUPABASE_URL = "https://kdxbkwcvrihcxqhukjee.supabase.co";
+const SUPABASE_KEY = "sb_publishable_9whlg1wqquwmjgivsavs0A_H7HpbgE9";
 
 const sb = async (path, options = {}) => {
   const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
     ...options,
     headers: {
-      apikey: "sb_publishable_9whlg1wqquwmjgivsavs0A_H7HpbgE9",
-      Authorization: `Bearer ${"sb_publishable_9whlg1wqquwmjgivsavs0A_H7HpbgE9"}`,
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
       "Content-Type": "application/json",
       Prefer: "return=representation",
       ...(options.headers || {}),
@@ -35,17 +36,12 @@ export default async function handler(req, res) {
       investorContactIds = (invRows || []).map(r => r.contact_id);
     }
 
-    // 3. Get custom field IDs
-    const customFields = await sb("/custom_field_defs?field_key=in.(cs_done_deal,cs_responsiveness,cs_incoming_ads)&select=id,field_key");
-    const fieldIdMap = {};
-    (customFields || []).forEach(f => { fieldIdMap[f.field_key] = f.id; });
-
-    // 4. Load all contacts (paginated, excluding investors)
+    // 3. Load all contacts with cs_ columns directly
     const PAGE = 500;
     let allContacts = [];
     let offset = 0;
     while (true) {
-      let url = `/contacts?select=id&limit=${PAGE}&offset=${offset}`;
+      let url = `/contacts?select=id,cs_done_deal,cs_responsiveness,cs_incoming_ads&limit=${PAGE}&offset=${offset}`;
       if (investorContactIds.length > 0) {
         url += `&id=not.in.(${investorContactIds.join(",")})`;
       }
@@ -62,23 +58,9 @@ export default async function handler(req, res) {
 
     for (let i = 0; i < allContacts.length; i += BATCH) {
       const batch = allContacts.slice(i, i + BATCH);
-      const ids = batch.map(c => c.id);
-      const idList = ids.join(",");
+      const idList = batch.map(c => c.id).join(",");
 
-      // Custom field values
-      const fieldIds = Object.values(fieldIdMap).filter(Boolean);
-      let cvRows = [];
-      if (fieldIds.length > 0) {
-        cvRows = await sb(`/contact_custom_values?contact_id=in.(${idList})&field_id=in.(${fieldIds.join(",")})&select=contact_id,field_id,value`) || [];
-      }
-      const cvMap = {};
-      cvRows.forEach(row => {
-        if (!cvMap[row.contact_id]) cvMap[row.contact_id] = {};
-        const key = Object.keys(fieldIdMap).find(k => fieldIdMap[k] === row.field_id);
-        if (key) cvMap[row.contact_id][key] = (row.value || "").toLowerCase().trim();
-      });
-
-      // Conversations in last 30 days
+      // Recent conversations (last 30 days)
       const convRows = await sb(`/conversations?contact_id=in.(${idList})&last_message_at=gte.${thirtyDaysAgo}&select=contact_id,last_direction`) || [];
       const actMap = {};
       convRows.forEach(c => {
@@ -88,25 +70,27 @@ export default async function handler(req, res) {
         if (c.last_direction === "inbound") actMap[c.contact_id].hasReceived = true;
       });
 
-      // Score and upsert
+      // Score each contact
       for (const contact of batch) {
-        const cv = cvMap[contact.id] || {};
+        const done_deal = (contact.cs_done_deal || "").toLowerCase().trim();
+        const responsiveness = (contact.cs_responsiveness || "").toLowerCase().trim();
+        const incoming_ads = (contact.cs_incoming_ads || "").toLowerCase().trim();
         const act = actMap[contact.id] || {};
         let score = 0;
 
         for (const rule of rules) {
           switch (rule.signal_key) {
             case "cs_done_deal_yes":
-              if (["yes","1+","done","true","1"].includes(cv.cs_done_deal || "")) score += rule.points;
+              if (["yes","1+","done","true","1"].includes(done_deal)) score += rule.points;
               break;
             case "cs_done_deal_attempted":
-              if (["attempted","in progress","pending"].includes(cv.cs_done_deal || "")) score += rule.points;
+              if (["attempted","in progress","pending"].includes(done_deal)) score += rule.points;
               break;
             case "cs_responsiveness_good":
-              if (["responsive","yes","true","1"].includes(cv.cs_responsiveness || "")) score += rule.points;
+              if (["responsive","yes","true","1"].includes(responsiveness)) score += rule.points;
               break;
             case "cs_responsiveness_bad":
-              if (["unresponsive","no","false","0"].includes(cv.cs_responsiveness || "")) score += rule.points;
+              if (["unresponsive","no","false","0"].includes(responsiveness)) score += rule.points;
               break;
             case "recent_activity":
               if (act.hasActivity) score += rule.points;
@@ -115,7 +99,7 @@ export default async function handler(req, res) {
               if (act.hasSent && act.hasReceived) score += rule.points;
               break;
             case "cs_incoming_ads":
-              if ((cv.cs_incoming_ads || "") && !["","no","false","0","none"].includes(cv.cs_incoming_ads || "")) score += rule.points;
+              if (incoming_ads && !["","no","false","0","none"].includes(incoming_ads)) score += rule.points;
               break;
           }
         }
