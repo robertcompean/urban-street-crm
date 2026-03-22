@@ -13,7 +13,7 @@ const sb = async (path, options = {}) => {
     },
   });
   const text = await res.text();
-  if (!res.ok) throw new Error(text);
+  if (!res.ok) throw new Error(`${res.status} on ${path.slice(0,80)}: ${text}`);
   return text ? JSON.parse(text) : null;
 };
 
@@ -42,6 +42,7 @@ export default async function handler(req, res) {
     let offset = 0;
     while (true) {
       let url = `/contacts?select=id,cs_done_deal,cs_responsiveness,cs_incoming_ads&limit=${PAGE}&offset=${offset}`;
+      // Only apply exclusion filter if we actually have investor IDs
       if (investorContactIds.length > 0) {
         url += `&id=not.in.(${investorContactIds.join(",")})`;
       }
@@ -53,7 +54,8 @@ export default async function handler(req, res) {
     }
 
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    const BATCH = 200;
+    // Use smaller batches to avoid URL length limits
+    const BATCH = 50;
     let processed = 0;
 
     for (let i = 0; i < allContacts.length; i += BATCH) {
@@ -61,7 +63,13 @@ export default async function handler(req, res) {
       const idList = batch.map(c => c.id).join(",");
 
       // Recent conversations (last 30 days)
-      const convRows = await sb(`/conversations?contact_id=in.(${idList})&last_message_at=gte.${thirtyDaysAgo}&select=contact_id,last_direction`) || [];
+      let convRows = [];
+      try {
+        convRows = await sb(`/conversations?contact_id=in.(${idList})&last_message_at=gte.${thirtyDaysAgo}&select=contact_id,last_direction`) || [];
+      } catch(e) {
+        console.error("Conv fetch error:", e.message);
+      }
+
       const actMap = {};
       convRows.forEach(c => {
         if (!actMap[c.contact_id]) actMap[c.contact_id] = { hasActivity: false, hasSent: false, hasReceived: false };
@@ -105,11 +113,15 @@ export default async function handler(req, res) {
         }
 
         score = Math.max(0, Math.min(100, score));
-        await sb(`/contacts?id=eq.${contact.id}`, {
-          method: "PATCH",
-          headers: { Prefer: "" },
-          body: JSON.stringify({ ai_score: score }),
-        });
+        try {
+          await sb(`/contacts?id=eq.${contact.id}`, {
+            method: "PATCH",
+            headers: { Prefer: "" },
+            body: JSON.stringify({ ai_score: score }),
+          });
+        } catch(e) {
+          console.error("Patch error for", contact.id, e.message);
+        }
       }
 
       processed += batch.length;
@@ -117,7 +129,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ success: true, processed });
   } catch (err) {
-    console.error("calculate-scores error:", err);
+    console.error("calculate-scores error:", err.message);
     return res.status(500).json({ error: err.message });
   }
 }
