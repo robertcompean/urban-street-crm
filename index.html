@@ -467,6 +467,7 @@ const gmailFetch = async (path, opts = {}) => {
   });
   if (res.status === 401) {
     gmailAccessToken = null;
+    window.__gmailExpired?.();
     throw new Error("Gmail token expired — please reconnect");
   }
   if (!res.ok) { const e = await res.text(); throw new Error(e); }
@@ -646,6 +647,7 @@ const GmailProvider = ({ children }) => {
         setToken(response.access_token);
         setConnected(true);
         localStorage.setItem("gmail_connected", "1");
+        window.__gmailExpired = () => { setConnected(false); setToken(null); };
       },
     });
     gmailTokenClient.requestAccessToken();
