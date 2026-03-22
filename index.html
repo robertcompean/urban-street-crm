@@ -1715,8 +1715,8 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
     dragKey.current = null; dragOverKey.current = null;
   };
 
-  const [sortKey, setSortKey] = useState("name");
-  const [sortDir, setSortDir] = useState("asc");
+  const [sortKey, setSortKey] = useState("ai_score");
+  const [sortDir, setSortDir] = useState("desc");
   const [showFilters, setShowFilters] = useState(false);
   const [filterBuckets, setFilterBuckets] = useState([]);
   const [filterTags, setFilterTags] = useState([]);
