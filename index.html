@@ -2528,6 +2528,100 @@ const BulkGmailSync = ({ allContacts }) => {
 };
 
 // ── Settings Page
+// ── SCORING SETTINGS ─────────────────────────────────────────────────────────
+const ScoringSettings = () => {
+  const [rules, setRules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [msg, setMsg] = useState('');
+
+  const flash = (m) => { setMsg(m); setTimeout(() => setMsg(''), 4000); };
+
+  useEffect(() => {
+    fetch('/api/scoring-rules')
+      .then(r => r.json())
+      .then(d => { setRules(d.rules || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const update = (id, field, val) =>
+    setRules(prev => prev.map(r => r.id === id ? { ...r, [field]: val } : r));
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/scoring-rules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rules }),
+      });
+      flash(res.ok ? 'Rules saved.' : 'Error saving rules.');
+    } catch { flash('Error saving rules.'); }
+    setSaving(false);
+  };
+
+  const recalc = async () => {
+    setRunning(true);
+    try {
+      const res = await fetch('/api/calculate-scores', { method: 'POST' });
+      const d = await res.json();
+      flash(res.ok ? `Scores updated for ${d.processed} contacts.` : 'Error: ' + d.error);
+    } catch { flash('Error running scoring.'); }
+    setRunning(false);
+  };
+
+  if (loading) return <div style={{color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:11,padding:"20px 0"}}>Loading…</div>;
+
+  return (
+    <div style={{maxWidth:520}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 88px 52px",gap:8,marginBottom:6,
+        fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.14em",
+        textTransform:"uppercase",color:C.textMuted}}>
+        <span>Signal</span>
+        <span style={{textAlign:"center"}}>Points</span>
+        <span style={{textAlign:"center"}}>On</span>
+      </div>
+      {rules.map(rule => (
+        <div key={rule.id} style={{display:"grid",gridTemplateColumns:"1fr 88px 52px",gap:8,
+          alignItems:"center",padding:"10px 0",borderBottom:`1px solid ${C.border}`,
+          opacity:rule.enabled?1:0.4}}>
+          <span style={{fontSize:15,fontWeight:600,color:C.text}}>{rule.label}</span>
+          <input
+            type="number"
+            value={rule.points}
+            onChange={e => update(rule.id, 'points', parseInt(e.target.value)||0)}
+            style={{width:"100%",padding:"5px 8px",textAlign:"center",
+              border:`1px solid ${C.border}`,borderRadius:3,
+              fontFamily:"'JetBrains Mono',monospace",fontSize:13,
+              color:rule.points<0?C.red:C.green,outline:"none"}}
+          />
+          <div onClick={() => update(rule.id, 'enabled', !rule.enabled)}
+            style={{width:36,height:20,borderRadius:10,cursor:"pointer",margin:"0 auto",
+              background:rule.enabled?C.accent:"#d0d0d5",position:"relative",transition:"background .2s"}}>
+            <div style={{position:"absolute",top:2,left:rule.enabled?16:2,
+              width:16,height:16,borderRadius:"50%",background:"#fff",
+              transition:"left .2s",boxShadow:"0 1px 3px rgba(0,0,0,.2)"}}/>
+          </div>
+        </div>
+      ))}
+      <div style={{marginTop:20,display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+        <button className="us-btn us-save-btn" onClick={save} disabled={saving} style={{padding:"8px 20px"}}>
+          {saving?"SAVING…":"SAVE RULES"}
+        </button>
+        <button className="us-btn" onClick={recalc} disabled={running}
+          style={{padding:"8px 20px",borderColor:C.accent,color:C.accent}}>
+          {running?"RUNNING…":"RECALCULATE SCORES"}
+        </button>
+        {msg && <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textSub}}>{msg}</span>}
+      </div>
+      <div style={{marginTop:16,fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.textMuted}}>
+        Hot ≥ 80 · Warm 50–79 · Cold &lt; 50 · Investors excluded · Auto-runs with email sync
+      </div>
+    </div>
+  );
+};
+
 const SettingsPage = ({ onBack, allContacts }) => {
   const [tab, setTab] = useState("signatures");
   const [buckets, setBuckets] = useState([]);
@@ -2630,7 +2724,7 @@ const SettingsPage = ({ onBack, allContacts }) => {
     } catch(e) { alert("Failed: "+e.message); }
   };
 
-  const TABS = ["signatures","templates","buckets","tags","sync","send rules","custom fields"];
+  const TABS = ["signatures","templates","buckets","tags","sync","send rules","custom fields","scoring"];
 
   return (
     <div className="us-detail" style={{maxWidth:860,margin:"0 auto",padding:"32px 24px"}}>
@@ -2810,6 +2904,12 @@ const SettingsPage = ({ onBack, allContacts }) => {
           )}
           {tab === "send rules" && <SendRulesSettings/>}
           {tab === "custom fields" && <CustomFieldsSettings/>}
+          {tab === "scoring" && (
+            <div>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:C.accent,marginBottom:16}}>AI Scoring Rules</div>
+              <ScoringSettings/>
+            </div>
+          )}
         </>
       )}
     </div>
