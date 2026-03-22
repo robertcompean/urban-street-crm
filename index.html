@@ -1911,7 +1911,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
           <h1 style={{fontSize:36,fontWeight:900,lineHeight:1,letterSpacing:"-0.02em",color:C.text}}>CONTACTS</h1>
         </div>
         <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
-          <div className="us-mono" style={{fontSize:12,color:C.textMuted}}>{filtered.length} / {contacts.length}</div>          {/* Filter button */}
+          <div className="us-mono" style={{fontSize:13,color:C.text,fontWeight:700}}><span style={{color:filtered.length < contacts.length ? C.accent : C.text}}>{filtered.length}</span><span style={{color:C.textMuted,fontWeight:400}}> / {contacts.length}</span></div>          {/* Filter button */}
           <div style={{position:"relative"}} ref={filterRef}>
             <button className="us-btn" onClick={()=>setShowFilters(v=>!v)} style={{padding:"8px 12px",fontSize:12,borderColor: activeFilterCount>0?C.accent:"#252525",color: activeFilterCount>0?C.accent:"#888"}}>
               ⊟ FILTER{activeFilterCount>0?` (${activeFilterCount})`:""}
@@ -1927,12 +1927,16 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
                 <div style={{marginBottom:14}}>
                   <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Bucket</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                    {allBucketNames.map(b=>(
-                      <span key={b} onClick={()=>toggleFilter(filterBuckets,setFilterBuckets,b)}
-                        style={{display:"inline-flex",alignItems:"center",padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterBuckets.includes(b)?C.accent:"#333"}`,background:filterBuckets.includes(b)?"rgba(232,255,71,0.1)":"transparent",color:filterBuckets.includes(b)?C.accent:"#888",transition:"all .12s"}}>
-                        {filterBuckets.includes(b)?"✓ ":""}{b}
-                      </span>
-                    ))}
+                    {allBucketNames.map(b=>{
+                      const cnt = contacts.filter(c=>(c.contact_buckets||[]).some(cb=>cb.buckets?.name===b)).length;
+                      return (
+                        <span key={b} onClick={()=>toggleFilter(filterBuckets,setFilterBuckets,b)}
+                          style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterBuckets.includes(b)?C.accent:"#333"}`,background:filterBuckets.includes(b)?"rgba(232,255,71,0.1)":"transparent",color:filterBuckets.includes(b)?C.accent:"#888",transition:"all .12s"}}>
+                          {filterBuckets.includes(b)?"✓ ":""}{b}
+                          <span style={{background:filterBuckets.includes(b)?C.accent:"#444",color:"#fff",borderRadius:8,padding:"0 5px",fontSize:9,fontWeight:700}}>{cnt}</span>
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
                 )}
