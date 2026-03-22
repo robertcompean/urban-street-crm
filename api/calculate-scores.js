@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     }
 
     // 3. Get custom field IDs
-    const customFields = await sb("/custom_fields?field_key=in.(cs_done_deal,cs_responsiveness,cs_incoming_ads)&select=id,field_key");
+    const customFields = await sb("/custom_field_defs?field_key=in.(cs_done_deal,cs_responsiveness,cs_incoming_ads)&select=id,field_key");
     const fieldIdMap = {};
     (customFields || []).forEach(f => { fieldIdMap[f.field_key] = f.id; });
 
