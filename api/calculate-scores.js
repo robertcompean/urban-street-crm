@@ -27,34 +27,31 @@ export default async function handler(req, res) {
     const rules = await sb("/scoring_rules?enabled=eq.true");
     if (!rules?.length) return res.status(200).json({ success: true, processed: 0 });
 
-    // 2. Get investor bucket IDs to exclude
+    // 2. Get investor contact IDs to exclude (filter in memory)
     const investorBuckets = await sb("/buckets?name=ilike.%25investor%25&select=id");
-    let investorContactIds = [];
+    const investorContactIds = new Set();
     if (investorBuckets?.length) {
       const bucketIds = investorBuckets.map(b => b.id).join(",");
       const invRows = await sb(`/contact_buckets?bucket_id=in.(${bucketIds})&select=contact_id`);
-      investorContactIds = (invRows || []).map(r => r.contact_id);
+      (invRows || []).forEach(r => investorContactIds.add(r.contact_id));
     }
 
-    // 3. Load all contacts with cs_ columns directly
+    // 3. Load all contacts (no URL filter — exclude investors in memory)
     const PAGE = 500;
     let allContacts = [];
     let offset = 0;
     while (true) {
-      let url = `/contacts?select=*&limit=${PAGE}&offset=${offset}`;
-      // Only apply exclusion filter if we actually have investor IDs
-      if (investorContactIds.length > 0) {
-        url += `&id=not.in.(${investorContactIds.join(",")})`;
-      }
-      const batch = await sb(url);
+      const batch = await sb(`/contacts?select=*&limit=${PAGE}&offset=${offset}`);
       if (!batch?.length) break;
       allContacts = allContacts.concat(batch);
       if (batch.length < PAGE) break;
       offset += PAGE;
     }
 
+    // Filter out investors
+    allContacts = allContacts.filter(c => !investorContactIds.has(c.id));
+
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-    // Use smaller batches to avoid URL length limits
     const BATCH = 50;
     let processed = 0;
 
@@ -62,7 +59,6 @@ export default async function handler(req, res) {
       const batch = allContacts.slice(i, i + BATCH);
       const idList = batch.map(c => c.id).join(",");
 
-      // Recent conversations (last 30 days)
       let convRows = [];
       try {
         convRows = await sb(`/conversations?contact_id=in.(${idList})&last_message_at=gte.${thirtyDaysAgo}&select=contact_id,last_direction`) || [];
@@ -78,7 +74,6 @@ export default async function handler(req, res) {
         if (c.last_direction === "inbound") actMap[c.contact_id].hasReceived = true;
       });
 
-      // Score each contact
       for (const contact of batch) {
         const done_deal = (contact.cs_done_deal || "").toLowerCase().trim();
         const responsiveness = (contact.cs_responsiveness || "").toLowerCase().trim();
@@ -89,26 +84,19 @@ export default async function handler(req, res) {
         for (const rule of rules) {
           switch (rule.signal_key) {
             case "cs_done_deal_yes":
-              if (["yes","1+","done","true","1"].includes(done_deal)) score += rule.points;
-              break;
+              if (["yes","1+","done","true","1"].includes(done_deal)) score += rule.points; break;
             case "cs_done_deal_attempted":
-              if (["attempted","in progress","pending"].includes(done_deal)) score += rule.points;
-              break;
+              if (["attempted","in progress","pending"].includes(done_deal)) score += rule.points; break;
             case "cs_responsiveness_good":
-              if (["responsive","yes","true","1"].includes(responsiveness)) score += rule.points;
-              break;
+              if (["responsive","yes","true","1"].includes(responsiveness)) score += rule.points; break;
             case "cs_responsiveness_bad":
-              if (["unresponsive","no","false","0"].includes(responsiveness)) score += rule.points;
-              break;
+              if (["unresponsive","no","false","0"].includes(responsiveness)) score += rule.points; break;
             case "recent_activity":
-              if (act.hasActivity) score += rule.points;
-              break;
+              if (act.hasActivity) score += rule.points; break;
             case "email_thread":
-              if (act.hasSent && act.hasReceived) score += rule.points;
-              break;
+              if (act.hasSent && act.hasReceived) score += rule.points; break;
             case "cs_incoming_ads":
-              if (incoming_ads && !["","no","false","0","none"].includes(incoming_ads)) score += rule.points;
-              break;
+              if (incoming_ads && !["","no","false","0","none"].includes(incoming_ads)) score += rule.points; break;
           }
         }
 
@@ -120,10 +108,9 @@ export default async function handler(req, res) {
             body: JSON.stringify({ ai_score: score }),
           });
         } catch(e) {
-          console.error("Patch error for", contact.id, e.message);
+          console.error("Patch error:", contact.id, e.message);
         }
       }
-
       processed += batch.length;
     }
 
