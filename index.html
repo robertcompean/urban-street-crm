@@ -181,12 +181,13 @@ const PhoneField = ({ label, value }) => (
 const AiScoreBadge = ({ score, size="md" }) => {
   const hasScore = score !== null && score !== undefined && score !== "";
   const n = parseInt(score);
-  const color = !hasScore ? "#aaa" : n >= 80 ? "#22a355" : n >= 50 ? "#e8622a" : "#cc2222";
-  const bg = !hasScore ? "rgba(170,170,170,0.1)" : n >= 80 ? "rgba(34,163,85,0.1)" : n >= 50 ? "rgba(232,98,42,0.1)" : "rgba(204,34,34,0.1)";
+  // Hot=red, Warm=orange, Cold=blue
+  const color = !hasScore ? "#aaa" : n >= 80 ? "#cc2222" : n >= 50 ? "#e8622a" : "#4a90d9";
+  const bg = !hasScore ? "rgba(170,170,170,0.1)" : n >= 80 ? "rgba(204,34,34,0.1)" : n >= 50 ? "rgba(232,98,42,0.1)" : "rgba(74,144,217,0.1)";
   const fs = size === "lg" ? 18 : size === "sm" ? 10 : 13;
   const pad = size === "lg" ? "6px 14px" : size === "sm" ? "2px 6px" : "3px 10px";
   return (
-    <div title="AI Score" style={{display:"inline-flex",alignItems:"center",gap:4,background:bg,border:`1px solid ${color}44`,borderRadius:4,padding:pad,flexShrink:0}}>
+    <div title={!hasScore?"No score":n>=80?"Hot":n>=50?"Warm":"Cold"} style={{display:"inline-flex",alignItems:"center",gap:4,background:bg,border:`1px solid ${color}44`,borderRadius:4,padding:pad,flexShrink:0}}>
       <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:fs,color,fontWeight:900}}>{hasScore ? n : "—"}</span>
     </div>
   );
@@ -2534,6 +2535,8 @@ const ScoringSettings = () => {
   const [saving, setSaving] = useState(false);
   const [running, setRunning] = useState(false);
   const [msg, setMsg] = useState('');
+  const dragIdx = useRef(null);
+  const dragOverIdx = useRef(null);
 
   const flash = (m) => { setMsg(m); setTimeout(() => setMsg(''), 4000); };
 
@@ -2546,6 +2549,22 @@ const ScoringSettings = () => {
 
   const update = (id, field, val) =>
     setRules(prev => prev.map(r => r.id === id ? { ...r, [field]: val } : r));
+
+  const onDragStart = (i) => { dragIdx.current = i; };
+  const onDragEnter = (i) => { dragOverIdx.current = i; };
+  const onDragEnd = () => {
+    const from = dragIdx.current;
+    const to = dragOverIdx.current;
+    if (from === null || to === null || from === to) return;
+    setRules(prev => {
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+    dragIdx.current = null;
+    dragOverIdx.current = null;
+  };
 
   const save = async () => {
     setSaving(true);
@@ -2573,18 +2592,26 @@ const ScoringSettings = () => {
   if (loading) return <div style={{color:C.textMuted,fontFamily:"'JetBrains Mono',monospace",fontSize:11,padding:"20px 0"}}>Loading…</div>;
 
   return (
-    <div style={{maxWidth:520}}>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 88px 52px",gap:8,marginBottom:6,
+    <div style={{maxWidth:540}}>
+      <div style={{display:"grid",gridTemplateColumns:"24px 1fr 88px 52px",gap:8,marginBottom:6,
         fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.14em",
         textTransform:"uppercase",color:C.textMuted}}>
+        <span/>
         <span>Signal</span>
         <span style={{textAlign:"center"}}>Points</span>
         <span style={{textAlign:"center"}}>On</span>
       </div>
-      {rules.map(rule => (
-        <div key={rule.id} style={{display:"grid",gridTemplateColumns:"1fr 88px 52px",gap:8,
-          alignItems:"center",padding:"10px 0",borderBottom:`1px solid ${C.border}`,
-          opacity:rule.enabled?1:0.4}}>
+      {rules.map((rule, i) => (
+        <div key={rule.id}
+          draggable
+          onDragStart={() => onDragStart(i)}
+          onDragEnter={() => onDragEnter(i)}
+          onDragEnd={onDragEnd}
+          onDragOver={e => e.preventDefault()}
+          style={{display:"grid",gridTemplateColumns:"24px 1fr 88px 52px",gap:8,
+            alignItems:"center",padding:"10px 0",borderBottom:`1px solid ${C.border}`,
+            opacity:rule.enabled?1:0.4,cursor:"grab"}}>
+          <span style={{color:C.textMuted,fontSize:14,cursor:"grab",userSelect:"none",textAlign:"center"}}>⠿</span>
           <span style={{fontSize:15,fontWeight:600,color:C.text}}>{rule.label}</span>
           <input
             type="number"
@@ -2593,7 +2620,7 @@ const ScoringSettings = () => {
             style={{width:"100%",padding:"5px 8px",textAlign:"center",
               border:`1px solid ${C.border}`,borderRadius:3,
               fontFamily:"'JetBrains Mono',monospace",fontSize:13,
-              color:rule.points<0?C.red:C.green,outline:"none"}}
+              color:rule.points<0?C.red:C.green,outline:"none",cursor:"text"}}
           />
           <div onClick={() => update(rule.id, 'enabled', !rule.enabled)}
             style={{width:36,height:20,borderRadius:10,cursor:"pointer",margin:"0 auto",
