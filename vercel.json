@@ -1,24 +1,19 @@
 {
   "rewrites": [
-    { "source": "/api/gmail-auth",        "destination": "/api/gmail-auth.js" },
-    { "source": "/api/gmail-sync",        "destination": "/api/gmail-sync.js" },
-    { "source": "/api/gmail-token",       "destination": "/api/gmail-token.js" },
-    { "source": "/api/gmail-scheduler",   "destination": "/api/gmail-scheduler.js" },
-    { "source": "/api/send-blast",        "destination": "/api/send-blast.js" },
-    { "source": "/api/resend-webhook",    "destination": "/api/resend-webhook.js" },
-    { "source": "/api/unsubscribe",       "destination": "/api/unsubscribe.js" },
-    { "source": "/api/scoring-rules",     "destination": "/api/scoring-rules.js" },
-    { "source": "/api/calculate-scores",  "destination": "/api/calculate-scores.js" }
+    { "source": "/api/gmail-auth",       "destination": "/api/gmail-auth.js" },
+    { "source": "/api/gmail-sync",       "destination": "/api/gmail-sync.js" },
+    { "source": "/api/gmail-token",      "destination": "/api/gmail-token.js" },
+    { "source": "/api/gmail-scheduler",  "destination": "/api/gmail-scheduler.js" },
+    { "source": "/api/send-blast",       "destination": "/api/send-blast.js" },
+    { "source": "/api/resend-webhook",   "destination": "/api/resend-webhook.js" },
+    { "source": "/api/unsubscribe",      "destination": "/api/unsubscribe.js" },
+    { "source": "/api/scoring-rules",    "destination": "/api/scoring-rules.js" },
+    { "source": "/api/calculate-scores", "destination": "/api/calculate-scores.js" }
   ],
   "crons": [
-    { "path": "/api/gmail-sync",        "schedule": "0 16 * * *" },
-    { "path": "/api/gmail-sync",        "schedule": "0 22 * * *" },
-    { "path": "/api/gmail-scheduler",   "schedule": "0 17 * * *" },
-    { "path": "/api/calculate-scores",  "schedule": "0 23 * * *" }
+    { "path": "/api/gmail-sync",       "schedule": "0 16 * * *" },
+    { "path": "/api/gmail-sync",       "schedule": "0 22 * * *" },
+    { "path": "/api/gmail-scheduler",  "schedule": "0 17 * * *" },
+    { "path": "/api/calculate-scores", "schedule": "0 23 * * *" }
   ]
 }
-```
-
-Scoring runs at 11pm UTC (3pm PST) daily — after the Gmail sync at 8am PST so fresh conversation data is factored in. Replace `vercel.json`, then deploy:
-```
-cd ~/Desktop/urban-street-crm && git add -A && git commit -m "add scoring cron and api rewrites" && git push && vercel --prod
