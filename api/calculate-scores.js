@@ -79,7 +79,7 @@ export default async function handler(req, res) {
       for (const rule of rules) {
         switch (rule.signal_key) {
           case "cs_done_deal_yes":
-            if (["yes","1+","done","true","1"].includes(done_deal)) score += rule.points; break;
+            if (["yes","1+","done 1+","done","true","1"].includes(done_deal)) score += rule.points; break;
           case "cs_done_deal_attempted":
             if (["attempted","in progress","pending"].includes(done_deal)) score += rule.points; break;
           case "cs_responsiveness_good":
