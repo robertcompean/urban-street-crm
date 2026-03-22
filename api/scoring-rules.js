@@ -4,8 +4,8 @@ const sb = async (path, options = {}) => {
   const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
     ...options,
     headers: {
-      apikey: process.env.SUPABASE_SERVICE_KEY,
-      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
+      apikey: "sb_publishable_9whlg1wqquwmjgivsavs0A_H7HpbgE9",
+      Authorization: `Bearer ${"sb_publishable_9whlg1wqquwmjgivsavs0A_H7HpbgE9"}`,
       "Content-Type": "application/json",
       Prefer: "return=representation",
       ...(options.headers || {}),
