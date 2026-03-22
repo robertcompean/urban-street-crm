@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     if (!rules?.length) return res.status(200).json({ success: true, processed: 0 });
 
     // 2. Get investor bucket IDs to exclude
-    const investorBuckets = await sb("/buckets?name=ilike.*investor*&select=id");
+    const investorBuckets = await sb("/buckets?name=ilike.%25investor%25&select=id");
     let investorContactIds = [];
     if (investorBuckets?.length) {
       const bucketIds = investorBuckets.map(b => b.id).join(",");
