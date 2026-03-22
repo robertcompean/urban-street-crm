@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     let allContacts = [];
     let offset = 0;
     while (true) {
-      let url = `/contacts?select=id,cs_done_deal,cs_responsiveness,cs_incoming_ads&limit=${PAGE}&offset=${offset}`;
+      let url = `/contacts?select=*&limit=${PAGE}&offset=${offset}`;
       // Only apply exclusion filter if we actually have investor IDs
       if (investorContactIds.length > 0) {
         url += `&id=not.in.(${investorContactIds.join(",")})`;
