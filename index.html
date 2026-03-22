@@ -187,7 +187,6 @@ const AiScoreBadge = ({ score, size="md" }) => {
   const pad = size === "lg" ? "6px 14px" : size === "sm" ? "2px 6px" : "3px 10px";
   return (
     <div title="AI Score" style={{display:"inline-flex",alignItems:"center",gap:4,background:bg,border:`1px solid ${color}44`,borderRadius:4,padding:pad,flexShrink:0}}>
-      <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:fs-2,color,letterSpacing:"0.06em",fontWeight:700}}>AI</span>
       <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:fs,color,fontWeight:900}}>{hasScore ? n : "—"}</span>
     </div>
   );
