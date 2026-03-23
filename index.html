@@ -2867,7 +2867,7 @@ const SettingsPage = ({ onBack, allContacts }) => {
     } catch(e) { alert("Failed: "+e.message); }
   };
 
-  const TABS = ["signatures","templates","buckets","tags","sync","send rules","custom fields","scoring"];
+  const TABS = ["signatures","templates","buckets","tags","sync","send rules","custom fields","scoring","gmail"];
 
   return (
     <div className="us-detail" style={{maxWidth:860,margin:"0 auto",padding:"32px 24px"}}>
@@ -3051,6 +3051,18 @@ const SettingsPage = ({ onBack, allContacts }) => {
             <div>
               <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:C.accent,marginBottom:16}}>AI Scoring Rules</div>
               <ScoringSettings/>
+            </div>
+          )}
+          {tab === "gmail" && (
+            <div>
+              <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.18em",textTransform:"uppercase",color:C.accent,marginBottom:16}}>Gmail Connection</div>
+              <div className="edit-section" style={{maxWidth:400}}>
+                <div className="edit-section-title">Account</div>
+                <GmailStatusBar/>
+                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.textMuted,marginTop:12,lineHeight:1.6}}>
+                  Connect your Gmail account to send 1:1 emails and sync conversations. Required for bulk sends via Gmail.
+                </div>
+              </div>
             </div>
           )}
         </>
