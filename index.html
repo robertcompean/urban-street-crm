@@ -1913,7 +1913,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
       : s || null;
     const color = subColor(subStatus);
     switch(key) {
-      case "name": return <td key={key} style={{fontWeight:700,fontSize:15,color:C.text}}>{name}</td>;
+      case "name": return <td key={key} style={{fontWeight:700,fontSize:15,color:C.text}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}><span>{name}</span>{mob && c.ai_score!=null && <AiScoreBadge score={c.ai_score} size="sm"/>}</div></td>;
       case "ai_score": return <td key={key}>{c.ai_score !== null && c.ai_score !== undefined ? <AiScoreBadge score={c.ai_score} size="sm"/> : <span style={{color:C.textMuted}}>—</span>}</td>;
       case "email": return <td key={key} className="us-mono" style={{fontSize:13,color:C.textSub}}>{c.email||"—"}</td>;
       case "cell": return <td key={key} className="us-mono" style={{fontSize:13,color:C.text}}>{fmt.phone(c.cell||c.mobile||c.cell_phone)}</td>;
