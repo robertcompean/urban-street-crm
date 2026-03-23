@@ -579,7 +579,7 @@ const gmailSyncContact = async (contactId, contactEmail) => {
     // Upsert conversation in Supabase
     let conv;
     try {
-      const existing = await supaFetch(`/conversations?gmail_thread_id=eq.${t.id}&select=id`);
+      const existing = await supaFetch(`/conversations?gmail_thread_id=eq.${t.id}&contact_id=eq.${contactId}&select=id`);
       if (existing?.length) {
         conv = existing[0];
         await supaFetch(`/conversations?id=eq.${conv.id}`, {
@@ -587,19 +587,26 @@ const gmailSyncContact = async (contactId, contactEmail) => {
           body: JSON.stringify({ last_message_at: lastDate.toISOString(), snippet: getSnippet(lastMsg), last_direction: lastDirection }),
         });
       } else {
-        const res = await supaFetch("/conversations", {
-          method: "POST",
-          body: JSON.stringify({
-            contact_id: contactId,
-            gmail_thread_id: t.id,
-            subject,
-            snippet: getSnippet(firstMsg),
-            last_message_at: lastDate.toISOString(),
-            unread: false,
-            last_direction: lastDirection,
-          }),
-        });
-        conv = Array.isArray(res) ? res[0] : res;
+        try {
+          const res = await supaFetch("/conversations", {
+            method: "POST",
+            body: JSON.stringify({
+              contact_id: contactId,
+              gmail_thread_id: t.id,
+              subject,
+              snippet: getSnippet(lastMsg),
+              last_message_at: lastDate.toISOString(),
+              unread: false,
+              last_direction: lastDirection,
+            }),
+          });
+          conv = Array.isArray(res) ? res[0] : res;
+        } catch(insertErr) {
+          // Unique constraint violation — fetch the existing row
+          const retry = await supaFetch(`/conversations?gmail_thread_id=eq.${t.id}&contact_id=eq.${contactId}&select=id`);
+          if (retry?.length) conv = retry[0];
+          else throw insertErr;
+        }
       }
     } catch(e) { console.error("Conv upsert error:", e); continue; }
 
