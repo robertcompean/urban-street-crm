@@ -1281,7 +1281,7 @@ const NewContactForm = ({ onBack, onCreated }) => {
     if (!form.first_name && !form.last_name) { alert("First or last name is required."); return; }
     setEmailError(null);
     if (form.email) {
-      const existing = await supaFetch(`/contacts?email=eq.${encodeURIComponent(form.email)}&select=id&limit=1`);
+      const existing = await supaFetch(`/contacts?email=ilike.${encodeURIComponent(form.email)}&select=id&limit=1`);
       if (existing && existing.length > 0) {
         setEmailError("A contact with this email already exists.");
         setSaving(false);
