@@ -4432,6 +4432,7 @@ const ScheduledSendsPage = () => {
 };
 
 function App() {
+  const mob = useMobile();
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -4510,6 +4511,7 @@ function App() {
         <div style={{display:"flex",gap:2,flex:1}}>
           {[{key:"contacts",label:"CONTACTS"},{key:"bulk",label:"BULK SENDS"},{key:"scheduled",label:"SCHEDULED"}].map(({key,label})=>(
             <button key={key} onClick={()=>goTo(key)} style={{
+              display: mob && (key==="bulk"||key==="scheduled") ? "none" : undefined,
               background:"transparent",border:"none",cursor:"pointer",
               padding:"14px 18px",fontFamily:"'JetBrains Mono',monospace",fontSize:11,
               fontWeight:700,letterSpacing:"0.12em",color:view===key?C.accent:C.textMuted,
