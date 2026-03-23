@@ -243,10 +243,19 @@ const SubBadge = ({ value }) => {
 };
 
 // ── Edit field components
+const toProperCase = (str) => str.replace(/\S+/g, w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+
 const EField = ({ label, field, form, onChange, mono=false, placeholder="" }) => (
   <div style={{display:"flex",flexDirection:"column",gap:6}}>
     <div className="us-section-label">{label}</div>
     <input className={`us-input${mono?" us-input-mono":""}`} value={form[field]||""} onChange={e=>onChange(field,e.target.value)} placeholder={placeholder||label}/>
+  </div>
+);
+
+const ENameField = ({ label, field, form, onChange, placeholder="" }) => (
+  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+    <div className="us-section-label">{label}</div>
+    <input className="us-input" value={form[field]||""} onChange={e=>onChange(field,toProperCase(e.target.value))} placeholder={placeholder||label}/>
   </div>
 );
 
@@ -1004,8 +1013,8 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
           <div className="edit-section">
             <div className="edit-section-title">Identity</div>
             <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:12}}>
-              <EField label="First Name" field="first_name" form={form} onChange={setField} placeholder="First name"/>
-              <EField label="Last Name" field="last_name" form={form} onChange={setField} placeholder="Last name"/>
+              <ENameField label="First Name" field="first_name" form={form} onChange={setField} placeholder="First name"/>
+              <ENameField label="Last Name" field="last_name" form={form} onChange={setField} placeholder="Last name"/>
             </div>
             <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:12}}>
               <EField label="Email" field="email" form={form} onChange={setField} placeholder="email@example.com"/>
@@ -1265,8 +1274,8 @@ const NewContactForm = ({ onBack, onCreated }) => {
         <div className="edit-section">
           <div className="edit-section-title">Identity</div>
           <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:12}}>
-            <EField label="First Name" field="first_name" form={form} onChange={setField} placeholder="First name"/>
-            <EField label="Last Name" field="last_name" form={form} onChange={setField} placeholder="Last name"/>
+            <ENameField label="First Name" field="first_name" form={form} onChange={setField} placeholder="First name"/>
+            <ENameField label="Last Name" field="last_name" form={form} onChange={setField} placeholder="Last name"/>
           </div>
           <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:12}}>
             <EField label="Email" field="email" form={form} onChange={setField} placeholder="email@example.com"/>
