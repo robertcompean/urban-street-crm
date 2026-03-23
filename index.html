@@ -1247,6 +1247,7 @@ const NewContactForm = ({ onBack, onCreated }) => {
   const [form, setForm] = useState({...EMPTY_CONTACT});
   const [saving, setSaving] = useState(false);
   const [emailError, setEmailError] = useState(null);
+  const emailFieldRef = useRef(null);
   const [allTags, setAllTags] = useState([]);
   const [selectedTagIds, setSelectedTagIds] = useState([]);
   const [allBuckets, setAllBuckets] = useState([]);
@@ -1285,6 +1286,7 @@ const NewContactForm = ({ onBack, onCreated }) => {
       if (existing && existing.length > 0) {
         setEmailError("A contact with this email already exists.");
         setSaving(false);
+        setTimeout(() => emailFieldRef.current?.scrollIntoView({ behavior:"smooth", block:"center" }), 50);
         return;
       }
     }
@@ -1335,7 +1337,7 @@ const NewContactForm = ({ onBack, onCreated }) => {
             <ENameField label="Last Name" field="last_name" form={form} onChange={setField} placeholder="Last name"/>
           </div>
           <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:12}}>
-            <div>
+            <div ref={emailFieldRef}>
               <EField label="Email" field="email" form={form} onChange={(f,v)=>{setField(f,v);setEmailError(null);}} placeholder="email@example.com"/>
               {emailError && <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.red,marginTop:5,letterSpacing:"0.04em"}}>⚠ {emailError}</div>}
             </div>
