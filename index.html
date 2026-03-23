@@ -4092,7 +4092,10 @@ const BulkSendsPage = ({ allContacts, preselectedContacts, onDone }) => {
           )}
 
           <div style={{marginTop:16}}>
-            <button className="us-btn" onClick={goBack}>← BACK</button>
+            {onDone && sendState==="done"
+              ? <button className="us-btn us-save-btn" onClick={onDone}>← BACK TO CONTACT</button>
+              : <button className="us-btn" onClick={goBack}>← BACK</button>
+            }
           </div>
         </div>
       )}
