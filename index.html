@@ -796,8 +796,18 @@ const ConversationsSection = ({ contactId, contactEmail }) => {
   const loadConvs = async () => {
     setLoading(true);
     try {
-      const data = await supaFetch(`/conversations?contact_id=eq.${contactId}&order=last_message_at.desc`);
-      setConversations(data || []);
+      const data = await supaFetch(`/conversations?contact_id=eq.${contactId}&order=last_message_at.desc&select=*,messages(body_text,direction,sent_at)`);
+      // For each conversation, find the most recent message snippet
+      const convs = (data || []).map(conv => {
+        const msgs = (conv.messages || []).sort((a,b) => new Date(b.sent_at) - new Date(a.sent_at));
+        const latestMsg = msgs[0];
+        return {
+          ...conv,
+          snippet: latestMsg ? (latestMsg.body_text||"").slice(0,120).replace(/\s+/g," ").trim() : conv.snippet,
+          last_direction: latestMsg ? latestMsg.direction : conv.last_direction,
+        };
+      });
+      setConversations(convs);
     } catch(e) { console.error(e); }
     setLoading(false);
   };
@@ -871,7 +881,7 @@ const ConversationsSection = ({ contactId, contactEmail }) => {
             const convMsgs = messages[conv.id] || [];
             const isLoadingMsgs = loadingMsgs[conv.id];
             return (
-              <div key={conv.id} className="us-conv-thread" style={{background:isOpen?"#fff":C.surface,border:`1px solid ${isOpen?"#d0d0d5":C.border}`,borderLeft:`3px solid ${conv.last_direction==="outbound"?C.accent:"#bbb"}`,borderRadius:4,overflow:"hidden"}}>
+              <div key={conv.id} className="us-conv-thread" style={{background:isOpen?"#fff":C.surface,border:`1px solid ${isOpen?"#d0d0d5":C.border}`,borderLeft:`3px solid ${conv.last_direction==="inbound"?C.accent:"#bbb"}`,borderRadius:4,overflow:"hidden"}}>
                 <div onClick={()=>toggleConv(conv.id)} style={{padding:"12px 16px",cursor:"pointer",display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:3}}>
@@ -880,9 +890,9 @@ const ConversationsSection = ({ contactId, contactEmail }) => {
                     </div>
                     {!isOpen && conv.snippet && (
                       <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",paddingLeft:conv.unread?14:0}}>
-                        {conv.last_direction === "outbound"
-                          ? <span style={{color:C.accent,marginRight:5}}>↑</span>
-                          : <span style={{color:"#888",marginRight:5}}>↓</span>
+                        {conv.last_direction === "inbound"
+                          ? <span style={{color:C.accent,marginRight:5}}>↓</span>
+                          : <span style={{color:"#bbb",marginRight:5}}>↑</span>
                         }
                         {conv.snippet}
                       </div>
