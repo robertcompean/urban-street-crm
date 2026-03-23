@@ -823,7 +823,7 @@ const ConversationsSection = ({ contactId, contactEmail }) => {
     if (messages[convId] !== undefined) return;
     setLoadingMsgs(prev => ({...prev, [convId]: true}));
     try {
-      const msgs = await supaFetch(`/messages?conversation_id=eq.${convId}&order=sent_at.asc`);
+      const msgs = await supaFetch(`/messages?conversation_id=eq.${convId}&order=sent_at.desc`);
       setMessages(prev => ({...prev, [convId]: msgs || []}));
     } catch(e) { console.error(e); setMessages(prev => ({...prev, [convId]: []})); }
     setLoadingMsgs(prev => ({...prev, [convId]: false}));
