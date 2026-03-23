@@ -3349,7 +3349,7 @@ const isSuppressed = (c, engagementDays) => {
   return false;
 };
 
-const BulkSendsPage = ({ allContacts, preselectedContacts }) => {
+const BulkSendsPage = ({ allContacts, preselectedContacts, onDone }) => {
   const [step, setStep] = useState(0);
   const [templates, setTemplates] = useState([]);
   const [signatures, setSignatures] = useState([]);
@@ -4269,7 +4269,10 @@ const BulkSendsPage = ({ allContacts, preselectedContacts }) => {
                       {gmailConnected ? "✓ SEND COMPLETE" : "✓ SIMULATION COMPLETE"}
                     </div>
                     <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted,marginBottom:10}}>{sentCount} sent · {failCount} failed</div>
-                    <button className="us-btn" onClick={resetSend} style={{fontSize:11}}>↺ RUN AGAIN</button>
+                    <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
+                      <button className="us-btn" onClick={resetSend} style={{fontSize:11}}>↺ RUN AGAIN</button>
+                      {onDone && <button className="us-btn us-save-btn" onClick={onDone} style={{fontSize:11}}>← BACK TO CONTACT</button>}
+                    </div>
                   </div>
                 )}
               </div>}
@@ -4526,13 +4529,28 @@ function App() {
   const [creatingNew, setCreatingNew] = useState(false);
   const [view, setView] = useState("contacts"); // contacts | bulk | settings
   const [bulkSendContacts, setBulkSendContacts] = useState(null);
+  const [returnToContact, setReturnToContact] = useState(null);
 
   const goTo = (v) => { setView(v); setSelected(null); setCreatingNew(false); if(v!=="bulk") setBulkSendContacts(null); };
 
   const handleBulkSendFromTable = (selectedContacts) => {
-    const contacts = Array.isArray(selectedContacts) ? selectedContacts : [selectedContacts];
-    setBulkSendContacts(contacts);
+    const isSingle = !Array.isArray(selectedContacts);
+    const list = isSingle ? [selectedContacts] : selectedContacts;
+    // If sending from a single contact detail, remember it to return to
+    setReturnToContact(isSingle ? selectedContacts : null);
+    setBulkSendContacts(list);
     setView("bulk");
+  };
+
+  const handleAfterSend = () => {
+    if (returnToContact) {
+      setSelected(returnToContact);
+      setReturnToContact(null);
+      setBulkSendContacts(null);
+      setView("contacts");
+    } else {
+      goTo("contacts");
+    }
   };
 
   const load = useCallback(async () => {
@@ -4618,7 +4636,7 @@ function App() {
         : view==="scheduled"
           ? <ScheduledSendsPage/>
           : view==="bulk"
-          ? <BulkSendsPage allContacts={contacts} preselectedContacts={bulkSendContacts}/>
+          ? <BulkSendsPage allContacts={contacts} preselectedContacts={bulkSendContacts} onDone={handleAfterSend}/>
           : loading
             ? <div className="us-loading"><div className="us-spinner"/>LOADING CONTACTS</div>
             : error
