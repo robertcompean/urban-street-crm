@@ -93,6 +93,11 @@
     .us-mob-grid1{grid-template-columns:1fr!important}
     .us-mob-smaller{font-size:22px!important}
     .us-search{width:100%!important}
+    .us-table-wrap{overflow-x:hidden}
+    .us-table{table-layout:fixed;width:100%}
+    .us-table tbody td{overflow:hidden;text-overflow:ellipsis;max-width:0}
+    .us-nav-brand{white-space:nowrap!important;font-size:11px!important}
+    .us-nav-gmail{display:none!important}
   }
   /* FAB */
   .us-fab{position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;background:#e8622a;color:#fff;font-size:26px;font-weight:300;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(232,98,42,.4);z-index:50;line-height:1}
@@ -1605,7 +1610,7 @@ const CsvImportModal = ({ onClose, onImported }) => {
         {step === "map" && (
           <div>
             <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:"#888",marginBottom:16}}>{rows.length} ROWS DETECTED — MAP YOUR COLUMNS</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:24}}>
+            <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:10,marginBottom:24}}>
               {headers.map(h => (
                 <div key={h} style={{display:"flex",flexDirection:"column",gap:4}}>
                   <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:"#888",textTransform:"uppercase",letterSpacing:"0.08em"}}>{h}</div>
@@ -1931,7 +1936,6 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
           onImported={() => { setImportKey(k => k+1); setShowImport(false); window.location.reload(); }}
         />
       )}
-      {/* Mobile: search on top row, controls below */}
       {mob ? (
         <div style={{marginBottom:16}}>
           <div style={{marginBottom:10}}>
@@ -1945,58 +1949,61 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
               <button className="us-btn" onClick={()=>setShowFilters(v=>!v)} style={{padding:"8px 12px",fontSize:12,borderColor: activeFilterCount>0?C.accent:"#252525",color: activeFilterCount>0?C.accent:"#888"}}>
                 ⊟{activeFilterCount>0?` (${activeFilterCount})`:""}
               </button>
-              {showFilters && (
-                <div className="us-settings-panel" style={{minWidth:260}}>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.16em",color:C.accent,textTransform:"uppercase"}}>Filters</div>
-                    {activeFilterCount>0 && <span onClick={clearAllFilters} style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.red,cursor:"pointer",letterSpacing:"0.08em",textTransform:"uppercase"}}>Clear all</span>}
-                  </div>
-                  {allBucketNames.length > 0 && (
-                    <div style={{marginBottom:14}}>
-                      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Bucket</div>
-                      <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                        {allBucketNames.map(b=>{
-                          const cnt = contacts.filter(c=>(c.contact_buckets||[]).some(cb=>cb.buckets?.name===b)).length;
-                          return (
-                            <span key={b} onClick={()=>toggleFilter(filterBuckets,setFilterBuckets,b)}
-                              style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterBuckets.includes(b)?C.accent:"#333"}`,background:filterBuckets.includes(b)?"rgba(232,255,71,0.1)":"transparent",color:filterBuckets.includes(b)?C.accent:"#888",transition:"all .12s"}}>
-                              {filterBuckets.includes(b)?"✓ ":""}{b}
-                              <span style={{background:filterBuckets.includes(b)?C.accent:"#444",color:"#fff",borderRadius:8,padding:"0 5px",fontSize:9,fontWeight:700}}>{cnt}</span>
-                            </span>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                  {allTagNames.length > 0 && (
-                    <div style={{marginBottom:14}}>
-                      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Tag</div>
-                      <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                        {allTagNames.map(t=>(
-                          <span key={t} onClick={()=>toggleFilter(filterTags,setFilterTags,t)}
-                            style={{display:"inline-flex",alignItems:"center",padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterTags.includes(t)?C.accent:"#333"}`,background:filterTags.includes(t)?"rgba(232,255,71,0.1)":"transparent",color:filterTags.includes(t)?C.accent:"#888",transition:"all .12s"}}>
-                            {filterTags.includes(t)?"✓ ":""}{t}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {allStatuses.length > 0 && (
-                    <div>
-                      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Status</div>
-                      <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                        {allStatuses.map(s=>(
-                          <span key={s} onClick={()=>toggleFilter(filterStatus,setFilterStatus,s)}
-                            style={{display:"inline-flex",alignItems:"center",padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterStatus.includes(s)?C.accent:"#333"}`,background:filterStatus.includes(s)?"rgba(232,255,71,0.1)":"transparent",color:filterStatus.includes(s)?C.accent:"#888",transition:"all .12s"}}>
-                            {filterStatus.includes(s)?"✓ ":""}{s}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+            {showFilters && (
+              <div className="us-settings-panel" style={{minWidth:280}}>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.16em",color:C.accent,textTransform:"uppercase"}}>Filters</div>
+                  {activeFilterCount>0 && <span onClick={clearAllFilters} style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.red,cursor:"pointer",letterSpacing:"0.08em",textTransform:"uppercase"}}>Clear all</span>}
                 </div>
-              )}
-            </div>
+                {/* Bucket filter */}
+                {allBucketNames.length > 0 && (
+                <div style={{marginBottom:14}}>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Bucket</div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                    {allBucketNames.map(b=>{
+                      const cnt = contacts.filter(c=>(c.contact_buckets||[]).some(cb=>cb.buckets?.name===b)).length;
+                      return (
+                        <span key={b} onClick={()=>toggleFilter(filterBuckets,setFilterBuckets,b)}
+                          style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterBuckets.includes(b)?C.accent:"#333"}`,background:filterBuckets.includes(b)?"rgba(232,255,71,0.1)":"transparent",color:filterBuckets.includes(b)?C.accent:"#888",transition:"all .12s"}}>
+                          {filterBuckets.includes(b)?"✓ ":""}{b}
+                          <span style={{background:filterBuckets.includes(b)?C.accent:"#444",color:"#fff",borderRadius:8,padding:"0 5px",fontSize:9,fontWeight:700}}>{cnt}</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+                )}
+                {/* Tag filter */}
+                {allTagNames.length > 0 && (
+                  <div style={{marginBottom:14}}>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Tag</div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                      {allTagNames.map(t=>(
+                        <span key={t} onClick={()=>toggleFilter(filterTags,setFilterTags,t)}
+                          style={{display:"inline-flex",alignItems:"center",padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterTags.includes(t)?C.accent:"#333"}`,background:filterTags.includes(t)?"rgba(232,255,71,0.1)":"transparent",color:filterTags.includes(t)?C.accent:"#888",transition:"all .12s"}}>
+                          {filterTags.includes(t)?"✓ ":""}{t}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Status filter */}
+                {allStatuses.length > 0 && (
+                  <div>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Status</div>
+                    <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                      {allStatuses.map(s=>(
+                        <span key={s} onClick={()=>toggleFilter(filterStatus,setFilterStatus,s)}
+                          style={{display:"inline-flex",alignItems:"center",padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterStatus.includes(s)?C.accent:"#333"}`,background:filterStatus.includes(s)?"rgba(232,255,71,0.1)":"transparent",color:filterStatus.includes(s)?C.accent:"#888",transition:"all .12s"}}>
+                          {filterStatus.includes(s)?"✓ ":""}{s}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           </div>
         </div>
       ) : (
@@ -2098,7 +2105,6 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
           </div>
         </div>
       )}
-      {/* Mobile FAB */}
       {mob && <button className="us-fab" onClick={onNew}>+</button>}
       {/* Active filter pills */}
       {activeFilterCount > 0 && (
@@ -4497,7 +4503,7 @@ function App() {
     <div style={{background:C.bg,minHeight:"100vh",color:C.text}}>
       {/* Nav bar */}
       <div style={{background:C.surface,borderBottom:`1px solid ${C.border}`,padding:"0 24px",display:"flex",alignItems:"center",gap:0}}>
-        <div onClick={()=>goTo("contacts")} style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:C.accent,textTransform:"uppercase",marginRight:28,padding:"14px 0",cursor:"pointer"}}>
+        <div onClick={()=>goTo("contacts")} className="us-nav-brand" style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,fontWeight:700,letterSpacing:"0.2em",color:C.accent,textTransform:"uppercase",marginRight:28,padding:"14px 0",cursor:"pointer",whiteSpace:"nowrap"}}>
           Urban Street CRM
         </div>
         <div style={{display:"flex",gap:2,flex:1}}>
@@ -4511,11 +4517,11 @@ function App() {
             }}>{label}</button>
           ))}
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:16,paddingRight:8}}>
+        <div className="us-nav-gmail" style={{display:"flex",alignItems:"center",gap:16,paddingRight:8}}>
           <GmailStatusBar/>
-          <button onClick={()=>goTo("settings")} title="Settings" style={{background:"transparent",border:"none",color:view==="settings"?C.accent:"#999",cursor:"pointer",fontSize:18,padding:"4px",lineHeight:1,transition:"color .15s"}}
-            onMouseEnter={e=>{e.currentTarget.style.color=C.accent}} onMouseLeave={e=>e.currentTarget.style.color=view==="settings"?C.accent:"#999"}>⚙</button>
         </div>
+        <button onClick={()=>goTo("settings")} title="Settings" style={{background:"transparent",border:"none",color:view==="settings"?C.accent:"#999",cursor:"pointer",fontSize:18,padding:"4px",lineHeight:1,transition:"color .15s"}}
+          onMouseEnter={e=>{e.currentTarget.style.color=C.accent}} onMouseLeave={e=>e.currentTarget.style.color=view==="settings"?C.accent:"#999"}>⚙</button>
       </div>
       {/* Content */}
       {view==="settings"
