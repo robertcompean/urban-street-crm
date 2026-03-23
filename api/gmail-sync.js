@@ -1,5 +1,5 @@
 const SUPABASE_URL = "https://kdxbkwcvrihcxqhukjee.supabase.co";
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const SUPABASE_SERVICE_KEY = "sb_publishable_9whlg1wqquwmjgivsavs0A_H7HpbgE9";
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 
