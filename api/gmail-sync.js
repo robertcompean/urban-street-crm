@@ -4,9 +4,9 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 
 // How many contacts to process per cron run
-const BATCH_SIZE = 150;
+const BATCH_SIZE = 25;
 // Delay between Gmail API calls (ms)
-const DELAY_MS = 300;
+const DELAY_MS = 100;
 
 const refreshAccessToken = async (refreshToken) => {
   const res = await fetch("https://oauth2.googleapis.com/token", {
