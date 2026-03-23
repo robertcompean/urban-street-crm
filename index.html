@@ -949,9 +949,102 @@ const ConversationsSection = ({ contactId, contactEmail }) => {
 };
 
 // ── Contact Detail
+// ── Quick Compose Modal (single contact, no wizard)
+const QuickComposeModal = ({ contact, onClose, onSent }) => {
+  const { connected } = React.useContext(GmailContext);
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [signatures, setSignatures] = useState([]);
+  const [selectedSig, setSelectedSig] = useState(null);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState(null);
+  const name = [contact.first_name, contact.last_name].filter(Boolean).join(" ") || contact.name || contact.email;
+
+  useEffect(() => {
+    supaFetch("/signatures?order=created_at.asc").then(sigs => {
+      setSignatures(sigs || []);
+      if (sigs && sigs.length > 0) setSelectedSig(sigs[0].id);
+    }).catch(() => {});
+  }, []);
+
+  const handleSend = async () => {
+    if (!subject.trim()) { setError("Subject is required."); return; }
+    if (!body.trim()) { setError("Message is required."); return; }
+    if (!connected) { setError("Gmail not connected."); return; }
+    setSending(true); setError(null);
+    try {
+      const sig = signatures.find(s => s.id === selectedSig);
+      const sigHtml = sig?.html_output || "";
+      await gmailSend({ to: contact.email, subject, body, sigHtml });
+      // Save to conversations
+      try {
+        const existing = await supaFetch(`/conversations?contact_id=eq.${contact.id}&select=id&limit=1`);
+        const convId = existing?.[0]?.id;
+        if (convId) {
+          await supaFetch(`/conversations?id=eq.${convId}`, { method:"PATCH", body: JSON.stringify({ last_message_at: new Date().toISOString(), snippet: body.slice(0,120), last_direction:"outbound" }) });
+        } else {
+          const conv = await supaFetch("/conversations", { method:"POST", body: JSON.stringify({ contact_id: contact.id, subject, snippet: body.slice(0,120), last_message_at: new Date().toISOString(), unread: false, last_direction:"outbound" }) });
+          const convId2 = Array.isArray(conv) ? conv[0]?.id : conv?.id;
+          if (convId2) await supaFetch("/messages", { method:"POST", body: JSON.stringify({ conversation_id: convId2, direction:"outbound", from_email: gmailUserEmail, subject, body_text: body, sent_at: new Date().toISOString() }) });
+        }
+      } catch(e) {}
+      setSent(true);
+      setTimeout(() => { onSent && onSent(); onClose(); }, 1500);
+    } catch(e) { setError("Send failed: " + e.message); }
+    setSending(false);
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.45)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1000,padding:"16px"}}>
+      <div style={{background:"#fff",border:`1px solid ${C.border}`,borderRadius:6,width:"100%",maxWidth:580,display:"flex",flexDirection:"column",maxHeight:"90vh"}}>
+        {/* Header */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 20px",borderBottom:`1px solid ${C.border}`}}>
+          <div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.16em",color:C.accent,textTransform:"uppercase",marginBottom:2}}>New Email</div>
+            <div style={{fontWeight:700,fontSize:16,color:C.text}}>{name}</div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted}}>{contact.email}</div>
+          </div>
+          <button onClick={onClose} style={{background:"transparent",border:"none",fontSize:20,color:C.textMuted,cursor:"pointer",lineHeight:1,padding:"4px"}}>✕</button>
+        </div>
+        {/* Body */}
+        <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto",flex:1}}>
+          <div>
+            <div className="us-section-label" style={{marginBottom:5}}>Subject</div>
+            <input className="us-input" value={subject} onChange={e=>setSubject(e.target.value)} placeholder="Subject…"/>
+          </div>
+          <div style={{flex:1}}>
+            <div className="us-section-label" style={{marginBottom:5}}>Message</div>
+            <textarea className="us-textarea" value={body} onChange={e=>setBody(e.target.value)} placeholder="Write your message…" style={{minHeight:180,resize:"vertical"}}/>
+          </div>
+          {signatures.length > 0 && (
+            <div>
+              <div className="us-section-label" style={{marginBottom:5}}>Signature</div>
+              <select className="us-select" value={selectedSig||""} onChange={e=>setSelectedSig(e.target.value||null)}>
+                <option value="">No signature</option>
+                {signatures.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+          )}
+          {error && <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.red}}>⚠ {error}</div>}
+          {sent && <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.green,fontWeight:700}}>✓ EMAIL SENT</div>}
+        </div>
+        {/* Footer */}
+        <div style={{padding:"12px 20px",borderTop:`1px solid ${C.border}`,display:"flex",justifyContent:"flex-end",gap:8}}>
+          <button className="us-btn" onClick={onClose} disabled={sending}>CANCEL</button>
+          <button className="us-btn us-save-btn" onClick={handleSend} disabled={sending||sent}>
+            {sending ? "SENDING…" : "✉ SEND"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
   const mob = useMobile();
   const [editing, setEditing] = useState(false);
+  const [showCompose, setShowCompose] = useState(false);
   const [form, setForm] = useState({...contact, subscription_status: (() => {
     const s = String(contact.subscription_status||contact.subscribed||contact.sub_status||"").toLowerCase();
     if (s==="true"||s==="active") return "active";
@@ -1050,7 +1143,14 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
             <button className="us-btn us-delete-btn" onClick={()=>setShowConfirm(true)} style={{padding:"8px 14px"}}>✕ DELETE</button>
           )}
           {!editing && (
-            <button className="us-btn" onClick={()=>onSendEmail&&onSendEmail(contact)} style={{padding:"8px 14px",borderColor:C.accent,color:C.accent}}>✉ SEND EMAIL</button>
+            <button className="us-btn" onClick={()=>setShowCompose(true)} style={{padding:"8px 14px",borderColor:C.accent,color:C.accent}}>✉ SEND EMAIL</button>
+          )}
+          {showCompose && (
+            <QuickComposeModal
+              contact={contact}
+              onClose={()=>setShowCompose(false)}
+              onSent={()=>setShowCompose(false)}
+            />
           )}
           {!editing && (
             <button className="us-btn" title="SMS via Twilio — coming in Phase 2" style={{padding:"8px 14px",borderColor:"#888",color:"#888",cursor:"not-allowed",opacity:0.5}}>✉ SEND SMS</button>
