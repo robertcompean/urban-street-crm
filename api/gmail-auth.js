@@ -2,7 +2,7 @@ const SUPABASE_URL = "https://kdxbkwcvrihcxqhukjee.supabase.co";
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const APP_URL = "https://urban-street-crm-si8d.vercel.app";
+const APP_URL = "https://urban-street-crm.vercel.app";
 
 export default async function handler(req, res) {
   const { code, error } = req.query;
@@ -16,7 +16,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Exchange code for tokens
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -35,14 +34,12 @@ export default async function handler(req, res) {
       return res.redirect(`${APP_URL}?gmail_error=token_exchange_failed`);
     }
 
-    // Get user email via Gmail API profile
     const profileRes = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/profile", {
       headers: { Authorization: `Bearer ${tokens.access_token}` },
     });
     const profile = await profileRes.json();
     const userEmail = profile.emailAddress;
 
-    // Store refresh token in Supabase
     const upsertRes = await fetch(`${SUPABASE_URL}/rest/v1/gmail_tokens`, {
       method: "POST",
       headers: {
@@ -66,7 +63,6 @@ export default async function handler(req, res) {
       return res.redirect(`${APP_URL}?gmail_error=storage_failed`);
     }
 
-    // Redirect back to app with success
     return res.redirect(`${APP_URL}?gmail_connected=${encodeURIComponent(userEmail)}`);
   } catch (err) {
     console.error("Gmail auth error:", err);
