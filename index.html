@@ -1947,11 +1947,12 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
             <div className="us-mono" style={{fontSize:13,color:C.text,fontWeight:700}}><span style={{color:filtered.length < contacts.length ? C.accent : C.text}}>{filtered.length}</span><span style={{color:C.textMuted,fontWeight:400}}> / {contacts.length}</span></div>
             <div style={{position:"relative"}} ref={filterRef}>
-              <button className="us-btn" onClick={()=>setShowFilters(v=>!v)} style={{padding:"8px 12px",fontSize:12,borderColor: activeFilterCount>0?C.accent:"#252525",color: activeFilterCount>0?C.accent:"#888"}}>
-                ⊟{activeFilterCount>0?` (${activeFilterCount})`:""}
+              <button className="us-btn" onClick={()=>setShowFilters(v=>!v)} style={{padding:"8px 12px",fontSize:12,display:"flex",alignItems:"center",gap:6,borderColor: activeFilterCount>0?C.accent:"#252525",color: activeFilterCount>0?C.accent:"#888"}}>
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2h14l-5 6v5l-4-2V8L1 2z"/></svg>
+                {activeFilterCount>0?`(${activeFilterCount})`:""}
               </button>
             {showFilters && (
-              <div className="us-settings-panel" style={{minWidth:280}}>
+              <div className="us-settings-panel" style={{minWidth:280,right:"auto",left:0}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
                   <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.16em",color:C.accent,textTransform:"uppercase"}}>Filters</div>
                   {activeFilterCount>0 && <span onClick={clearAllFilters} style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.red,cursor:"pointer",letterSpacing:"0.08em",textTransform:"uppercase"}}>Clear all</span>}
@@ -2016,8 +2017,9 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
           <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
             <div className="us-mono" style={{fontSize:13,color:C.text,fontWeight:700}}><span style={{color:filtered.length < contacts.length ? C.accent : C.text}}>{filtered.length}</span><span style={{color:C.textMuted,fontWeight:400}}> / {contacts.length}</span></div>
             <div style={{position:"relative"}} ref={filterRef}>
-              <button className="us-btn" onClick={()=>setShowFilters(v=>!v)} style={{padding:"8px 12px",fontSize:12,borderColor: activeFilterCount>0?C.accent:"#252525",color: activeFilterCount>0?C.accent:"#888"}}>
-                ⊟ FILTER{activeFilterCount>0?` (${activeFilterCount})`:""}
+              <button className="us-btn" onClick={()=>setShowFilters(v=>!v)} style={{padding:"8px 12px",fontSize:12,display:"flex",alignItems:"center",gap:6,borderColor: activeFilterCount>0?C.accent:"#252525",color: activeFilterCount>0?C.accent:"#888"}}>
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor"><path d="M1 2h14l-5 6v5l-4-2V8L1 2z"/></svg>
+                FILTER{activeFilterCount>0?` (${activeFilterCount})`:""}
               </button>
               {showFilters && (
                 <div className="us-settings-panel" style={{minWidth:280}}>
