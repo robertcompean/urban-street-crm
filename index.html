@@ -85,12 +85,35 @@
   .us-conv-thread{transition:border-color .15s,background .15s}
   .us-conv-thread:hover{border-color:#bbbbc2 !important}
   .us-msg-bubble{transition:none}
+  /* Mobile utilities */
+  @media(max-width:640px){
+    .us-mob-hide{display:none!important}
+    .us-mob-full{width:100%!important;min-width:0!important}
+    .us-mob-pad{padding:16px 12px!important}
+    .us-mob-grid1{grid-template-columns:1fr!important}
+    .us-mob-smaller{font-size:22px!important}
+    .us-search{width:100%!important}
+  }
+  /* FAB */
+  .us-fab{position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;background:#e8622a;color:#fff;font-size:26px;font-weight:300;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(232,98,42,.4);z-index:50;line-height:1}
+  .us-fab:hover{background:#c8501a}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
 const { useState, useEffect, useCallback, useRef } = React;
+
+const useMobile = () => {
+  const [mob, setMob] = useState(() => window.innerWidth <= 640);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width:640px)");
+    const handler = (e) => setMob(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return mob;
+};
 
 const SUPABASE_URL = "https://kdxbkwcvrihcxqhukjee.supabase.co";
 const SUPABASE_KEY = "sb_publishable_9whlg1wqquwmjgivsavs0A_H7HpbgE9";
@@ -855,6 +878,7 @@ const ConversationsSection = ({ contactId, contactEmail }) => {
 
 // ── Contact Detail
 const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
+  const mob = useMobile();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({...contact, subscription_status: (() => {
     const s = String(contact.subscription_status||contact.subscribed||contact.sub_status||"").toLowerCase();
@@ -933,7 +957,7 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
   const extras = Object.entries(contact).filter(([k])=>!shown.has(k)&&contact[k]!=null&&contact[k]!=="");
 
   return (
-    <div className="us-detail" style={{maxWidth:860,margin:"0 auto",padding:"32px 24px"}}>
+    <div className="us-detail" style={{maxWidth:860,margin:"0 auto",padding:mob?"16px 12px":"32px 24px"}}>
       {/* Header */}
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:32,gap:16,flexWrap:"wrap"}}>
         <div style={{display:"flex",gap:16,alignItems:"center"}}>
@@ -973,25 +997,25 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
         <div style={{display:"flex",flexDirection:"column",gap:14}}>
           <div className="edit-section">
             <div className="edit-section-title">Identity</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:12}}>
               <EField label="First Name" field="first_name" form={form} onChange={setField} placeholder="First name"/>
               <EField label="Last Name" field="last_name" form={form} onChange={setField} placeholder="Last name"/>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:12}}>
               <EField label="Email" field="email" form={form} onChange={setField} placeholder="email@example.com"/>
               <EField label="Company" field="company" form={form} onChange={setField} placeholder="Company name"/>
             </div>
           </div>
           <div className="edit-section">
             <div className="edit-section-title">Phone Numbers</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:12}}>
               <EPhoneField label="Cell Phone" field="cell" form={form} onChange={setField}/>
               <EPhoneField label="Landline Phone" field="landline" form={form} onChange={setField}/>
             </div>
           </div>
           <div className="edit-section">
             <div className="edit-section-title">CRM Fields</div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:12}}>
               <ESelect label="Subscription Status" field="subscription_status" form={form} onChange={setField} options={["subscribed","unsubscribed","pending","active"]}/>
               <EDateField label="Last Activity Date" field="last_activity_date" form={form} onChange={setField}/>
             </div>
@@ -1019,7 +1043,7 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
           {customFieldDefs.length > 0 && (
             <div className="edit-section">
               <div className="edit-section-title">Custom Fields</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+              <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:12}}>
                 {customFieldDefs.map(f => (
                   <div key={f.field_key}>
                     <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.14em",textTransform:"uppercase",color:C.textMuted,marginBottom:6}}>{f.label}</div>
@@ -1047,7 +1071,7 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
         </div>
       ) : (
         <>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+          <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:10,marginBottom:10}}>
             <div className="us-field-card" style={{padding:"14px 16px"}}>
               <div className="us-section-label">Email</div>
               <div className="us-mono" style={{fontSize:14,color:C.text}}>{contact.email||"—"}</div>
@@ -1061,11 +1085,11 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
               </div>
             </div>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+          <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:10,marginBottom:10}}>
             <PhoneField label="Cell Phone" value={contact.cell||contact.cell_phone||contact.mobile}/>
             <PhoneField label="Landline Phone" value={contact.landline||contact.phone||contact.home_phone}/>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+          <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:10,marginBottom:10}}>
             <SubBadge value={contact.subscription_status||contact.subscribed||contact.sub_status}/>
           {contact.email_status && contact.email_status !== "active" && (
             <div className="us-field-card" style={{padding:"14px 16px"}}>
@@ -1102,7 +1126,7 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
           </div>
 
           {customFieldDefs.length > 0 && (
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+            <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:10,marginBottom:10}}>
               {customFieldDefs.map(f => (
                 <div key={f.field_key} className="us-field-card" style={{padding:"14px 16px"}}>
                   <div className="us-section-label">{f.label}</div>
@@ -1115,7 +1139,7 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
           )}
 
           {extras.length > 0 && (
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+            <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:10,marginBottom:10}}>
               {extras.map(([k,v])=>(<div key={k} className="us-field-card" style={{padding:"14px 16px"}}><div className="us-section-label">{k.replace(/_/g," ")}</div><div style={{fontSize:15,fontWeight:600,color:C.text}}>{typeof v==="boolean"?(v?"Yes":"No"):fmt.val(v)}</div></div>))}
             </div>
           )}
@@ -1157,6 +1181,7 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
 const EMPTY_CONTACT = { first_name:"", last_name:"", email:"", company:"", cell:"", landline:"", subscription_status:"", last_activity_date:"", notes:"", cs_responsiveness:"", cs_incoming_ads:"", cs_done_deal:"", ai_score:null };
 
 const NewContactForm = ({ onBack, onCreated }) => {
+  const mob = useMobile();
   const [form, setForm] = useState({...EMPTY_CONTACT});
   const [saving, setSaving] = useState(false);
   const [allTags, setAllTags] = useState([]);
@@ -1216,7 +1241,7 @@ const NewContactForm = ({ onBack, onCreated }) => {
   const initials = name === "New Contact" ? "+" : name.split(" ").slice(0,2).map(w=>w[0]).join("").toUpperCase();
 
   return (
-    <div className="us-detail" style={{maxWidth:860,margin:"0 auto",padding:"32px 24px"}}>
+    <div className="us-detail" style={{maxWidth:860,margin:"0 auto",padding:mob?"16px 12px":"32px 24px"}}>
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:32,gap:16,flexWrap:"wrap"}}>
         <div style={{display:"flex",gap:16,alignItems:"center"}}>
           <button className="us-btn" onClick={onBack}>✕ CANCEL</button>
@@ -1233,25 +1258,25 @@ const NewContactForm = ({ onBack, onCreated }) => {
       <div style={{display:"flex",flexDirection:"column",gap:14}}>
         <div className="edit-section">
           <div className="edit-section-title">Identity</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:12}}>
             <EField label="First Name" field="first_name" form={form} onChange={setField} placeholder="First name"/>
             <EField label="Last Name" field="last_name" form={form} onChange={setField} placeholder="Last name"/>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:12}}>
             <EField label="Email" field="email" form={form} onChange={setField} placeholder="email@example.com"/>
             <EField label="Company" field="company" form={form} onChange={setField} placeholder="Company name"/>
           </div>
         </div>
         <div className="edit-section">
           <div className="edit-section-title">Phone Numbers</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:12}}>
             <EPhoneField label="Cell Phone" field="cell" form={form} onChange={setField}/>
             <EPhoneField label="Landline Phone" field="landline" form={form} onChange={setField}/>
           </div>
         </div>
         <div className="edit-section">
           <div className="edit-section-title">CRM Fields</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+          <div style={{display:"grid",gridTemplateColumns:mob?"1fr":"1fr 1fr",gap:12}}>
             <ESelect label="Subscription Status" field="subscription_status" form={form} onChange={setField} options={["subscribed","unsubscribed","pending","active"]}/>
             <EDateField label="Last Activity Date" field="last_activity_date" form={form} onChange={setField}/>
           </div>
@@ -1675,6 +1700,7 @@ const exportCSV = (contacts) => {
 };
 
 const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
+  const mob = useMobile();
   const [search, setSearch] = useState("");
   const [showImport, setShowImport] = useState(false);
   const [importKey, setImportKey] = useState(0);
@@ -1897,7 +1923,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
   };
 
   return (
-    <div style={{padding:"32px 24px"}}>
+    <div style={{padding:mob?"16px 12px":"32px 24px"}}>
       {showImport && (
         <CsvImportModal
           key={importKey}
@@ -1905,106 +1931,175 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
           onImported={() => { setImportKey(k => k+1); setShowImport(false); window.location.reload(); }}
         />
       )}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,gap:12,flexWrap:"wrap"}}>
-        <div>
-          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.2em",color:C.accent,textTransform:"uppercase",marginBottom:6}}>Urban Street / CRM</div>
-          <h1 style={{fontSize:36,fontWeight:900,lineHeight:1,letterSpacing:"-0.02em",color:C.text}}>CONTACTS</h1>
-        </div>
-        <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
-          <div className="us-mono" style={{fontSize:13,color:C.text,fontWeight:700}}><span style={{color:filtered.length < contacts.length ? C.accent : C.text}}>{filtered.length}</span><span style={{color:C.textMuted,fontWeight:400}}> / {contacts.length}</span></div>          {/* Filter button */}
-          <div style={{position:"relative"}} ref={filterRef}>
-            <button className="us-btn" onClick={()=>setShowFilters(v=>!v)} style={{padding:"8px 12px",fontSize:12,borderColor: activeFilterCount>0?C.accent:"#252525",color: activeFilterCount>0?C.accent:"#888"}}>
-              ⊟ FILTER{activeFilterCount>0?` (${activeFilterCount})`:""}
-            </button>
-            {showFilters && (
-              <div className="us-settings-panel" style={{minWidth:280}}>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.16em",color:C.accent,textTransform:"uppercase"}}>Filters</div>
-                  {activeFilterCount>0 && <span onClick={clearAllFilters} style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.red,cursor:"pointer",letterSpacing:"0.08em",textTransform:"uppercase"}}>Clear all</span>}
-                </div>
-                {/* Bucket filter */}
-                {allBucketNames.length > 0 && (
-                <div style={{marginBottom:14}}>
-                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Bucket</div>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                    {allBucketNames.map(b=>{
-                      const cnt = contacts.filter(c=>(c.contact_buckets||[]).some(cb=>cb.buckets?.name===b)).length;
-                      return (
-                        <span key={b} onClick={()=>toggleFilter(filterBuckets,setFilterBuckets,b)}
-                          style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterBuckets.includes(b)?C.accent:"#333"}`,background:filterBuckets.includes(b)?"rgba(232,255,71,0.1)":"transparent",color:filterBuckets.includes(b)?C.accent:"#888",transition:"all .12s"}}>
-                          {filterBuckets.includes(b)?"✓ ":""}{b}
-                          <span style={{background:filterBuckets.includes(b)?C.accent:"#444",color:"#fff",borderRadius:8,padding:"0 5px",fontSize:9,fontWeight:700}}>{cnt}</span>
-                        </span>
-                      );
-                    })}
-                  </div>
-                </div>
-                )}
-                {/* Tag filter */}
-                {allTagNames.length > 0 && (
-                  <div style={{marginBottom:14}}>
-                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Tag</div>
-                    <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                      {allTagNames.map(t=>(
-                        <span key={t} onClick={()=>toggleFilter(filterTags,setFilterTags,t)}
-                          style={{display:"inline-flex",alignItems:"center",padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterTags.includes(t)?C.accent:"#333"}`,background:filterTags.includes(t)?"rgba(232,255,71,0.1)":"transparent",color:filterTags.includes(t)?C.accent:"#888",transition:"all .12s"}}>
-                          {filterTags.includes(t)?"✓ ":""}{t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {/* Status filter */}
-                {allStatuses.length > 0 && (
-                  <div>
-                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Status</div>
-                    <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                      {allStatuses.map(s=>(
-                        <span key={s} onClick={()=>toggleFilter(filterStatus,setFilterStatus,s)}
-                          style={{display:"inline-flex",alignItems:"center",padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterStatus.includes(s)?C.accent:"#333"}`,background:filterStatus.includes(s)?"rgba(232,255,71,0.1)":"transparent",color:filterStatus.includes(s)?C.accent:"#888",transition:"all .12s"}}>
-                          {filterStatus.includes(s)?"✓ ":""}{s}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+      {/* Mobile: search on top row, controls below */}
+      {mob ? (
+        <div style={{marginBottom:16}}>
+          <div style={{marginBottom:10}}>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.2em",color:C.accent,textTransform:"uppercase",marginBottom:4}}>Urban Street / CRM</div>
+            <h1 style={{fontSize:28,fontWeight:900,lineHeight:1,letterSpacing:"-0.02em",color:C.text}}>CONTACTS</h1>
           </div>
-          <div style={{position:"relative"}} ref={settingsRef}>
-            <button className="us-btn" onClick={()=>setShowColSettings(v=>!v)} style={{padding:"8px 12px",fontSize:12}}>⚙ COLUMNS</button>
-            {showColSettings && (
-              <div className="us-settings-panel">
-                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.16em",color:C.accent,textTransform:"uppercase",marginBottom:4}}>Columns</div>
-                <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,marginBottom:12}}>Toggle · Drag to reorder</div>
-                {orderedCols.map(col=>(
-                  <div
-                    key={col.key}
-                    className="us-col-toggle"
-                    draggable={!col.always}
-                    onDragStart={()=>onDragStart(col.key)}
-                    onDragOver={e=>onDragOver(e,col.key)}
-                    onDrop={onDrop}
-                    onClick={()=>!col.always&&toggleCol(col.key)}
-                    style={{cursor: col.always ? "default" : "grab"}}
-                  >
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      {!col.always && <span style={{color:"#444",fontSize:12,lineHeight:1}}>⠿</span>}
-                      {col.always && <span style={{width:16}}/>}
-                      <span className="us-col-toggle-label" style={{color: visibleCols.includes(col.key) ? C.text : "#555"}}>{col.label}</span>
-                    </div>
-                    <div className={`us-switch${visibleCols.includes(col.key)?" on":""}`} style={{opacity: col.always ? 0.4 : 1}}/>
+          <input className="us-search" placeholder="Search contacts…" value={search} onChange={e=>{setSearch(e.target.value);setPage(0);}} style={{width:"100%",marginBottom:10}}/>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <div className="us-mono" style={{fontSize:13,color:C.text,fontWeight:700}}><span style={{color:filtered.length < contacts.length ? C.accent : C.text}}>{filtered.length}</span><span style={{color:C.textMuted,fontWeight:400}}> / {contacts.length}</span></div>
+            <div style={{position:"relative"}} ref={filterRef}>
+              <button className="us-btn" onClick={()=>setShowFilters(v=>!v)} style={{padding:"8px 12px",fontSize:12,borderColor: activeFilterCount>0?C.accent:"#252525",color: activeFilterCount>0?C.accent:"#888"}}>
+                ⊟{activeFilterCount>0?` (${activeFilterCount})`:""}
+              </button>
+              {showFilters && (
+                <div className="us-settings-panel" style={{minWidth:260}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.16em",color:C.accent,textTransform:"uppercase"}}>Filters</div>
+                    {activeFilterCount>0 && <span onClick={clearAllFilters} style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.red,cursor:"pointer",letterSpacing:"0.08em",textTransform:"uppercase"}}>Clear all</span>}
                   </div>
-                ))}
-              </div>
-            )}
+                  {allBucketNames.length > 0 && (
+                    <div style={{marginBottom:14}}>
+                      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Bucket</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                        {allBucketNames.map(b=>{
+                          const cnt = contacts.filter(c=>(c.contact_buckets||[]).some(cb=>cb.buckets?.name===b)).length;
+                          return (
+                            <span key={b} onClick={()=>toggleFilter(filterBuckets,setFilterBuckets,b)}
+                              style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterBuckets.includes(b)?C.accent:"#333"}`,background:filterBuckets.includes(b)?"rgba(232,255,71,0.1)":"transparent",color:filterBuckets.includes(b)?C.accent:"#888",transition:"all .12s"}}>
+                              {filterBuckets.includes(b)?"✓ ":""}{b}
+                              <span style={{background:filterBuckets.includes(b)?C.accent:"#444",color:"#fff",borderRadius:8,padding:"0 5px",fontSize:9,fontWeight:700}}>{cnt}</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {allTagNames.length > 0 && (
+                    <div style={{marginBottom:14}}>
+                      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Tag</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                        {allTagNames.map(t=>(
+                          <span key={t} onClick={()=>toggleFilter(filterTags,setFilterTags,t)}
+                            style={{display:"inline-flex",alignItems:"center",padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterTags.includes(t)?C.accent:"#333"}`,background:filterTags.includes(t)?"rgba(232,255,71,0.1)":"transparent",color:filterTags.includes(t)?C.accent:"#888",transition:"all .12s"}}>
+                            {filterTags.includes(t)?"✓ ":""}{t}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {allStatuses.length > 0 && (
+                    <div>
+                      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Status</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                        {allStatuses.map(s=>(
+                          <span key={s} onClick={()=>toggleFilter(filterStatus,setFilterStatus,s)}
+                            style={{display:"inline-flex",alignItems:"center",padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterStatus.includes(s)?C.accent:"#333"}`,background:filterStatus.includes(s)?"rgba(232,255,71,0.1)":"transparent",color:filterStatus.includes(s)?C.accent:"#888",transition:"all .12s"}}>
+                            {filterStatus.includes(s)?"✓ ":""}{s}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-          <button className="us-btn" onClick={() => setShowImport(true)} style={{whiteSpace:"nowrap"}}>⬆ IMPORT CSV</button>
-          <button className="us-btn" onClick={() => exportCSV(filtered)} style={{whiteSpace:"nowrap"}}>⬇ EXPORT CSV</button>
-          <button className="us-btn us-edit-contact-btn" onClick={onNew} style={{whiteSpace:"nowrap"}}>+ NEW CONTACT</button>
-          <input className="us-search" placeholder="Search contacts…" value={search} onChange={e=>{setSearch(e.target.value);setPage(0);}}/>
         </div>
-      </div>
+      ) : (
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16,gap:12,flexWrap:"wrap"}}>
+          <div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.2em",color:C.accent,textTransform:"uppercase",marginBottom:6}}>Urban Street / CRM</div>
+            <h1 style={{fontSize:36,fontWeight:900,lineHeight:1,letterSpacing:"-0.02em",color:C.text}}>CONTACTS</h1>
+          </div>
+          <div style={{display:"flex",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+            <div className="us-mono" style={{fontSize:13,color:C.text,fontWeight:700}}><span style={{color:filtered.length < contacts.length ? C.accent : C.text}}>{filtered.length}</span><span style={{color:C.textMuted,fontWeight:400}}> / {contacts.length}</span></div>
+            <div style={{position:"relative"}} ref={filterRef}>
+              <button className="us-btn" onClick={()=>setShowFilters(v=>!v)} style={{padding:"8px 12px",fontSize:12,borderColor: activeFilterCount>0?C.accent:"#252525",color: activeFilterCount>0?C.accent:"#888"}}>
+                ⊟ FILTER{activeFilterCount>0?` (${activeFilterCount})`:""}
+              </button>
+              {showFilters && (
+                <div className="us-settings-panel" style={{minWidth:280}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.16em",color:C.accent,textTransform:"uppercase"}}>Filters</div>
+                    {activeFilterCount>0 && <span onClick={clearAllFilters} style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.red,cursor:"pointer",letterSpacing:"0.08em",textTransform:"uppercase"}}>Clear all</span>}
+                  </div>
+                  {allBucketNames.length > 0 && (
+                    <div style={{marginBottom:14}}>
+                      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Bucket</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                        {allBucketNames.map(b=>{
+                          const cnt = contacts.filter(c=>(c.contact_buckets||[]).some(cb=>cb.buckets?.name===b)).length;
+                          return (
+                            <span key={b} onClick={()=>toggleFilter(filterBuckets,setFilterBuckets,b)}
+                              style={{display:"inline-flex",alignItems:"center",gap:5,padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterBuckets.includes(b)?C.accent:"#333"}`,background:filterBuckets.includes(b)?"rgba(232,255,71,0.1)":"transparent",color:filterBuckets.includes(b)?C.accent:"#888",transition:"all .12s"}}>
+                              {filterBuckets.includes(b)?"✓ ":""}{b}
+                              <span style={{background:filterBuckets.includes(b)?C.accent:"#444",color:"#fff",borderRadius:8,padding:"0 5px",fontSize:9,fontWeight:700}}>{cnt}</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  {allTagNames.length > 0 && (
+                    <div style={{marginBottom:14}}>
+                      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Tag</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                        {allTagNames.map(t=>(
+                          <span key={t} onClick={()=>toggleFilter(filterTags,setFilterTags,t)}
+                            style={{display:"inline-flex",alignItems:"center",padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterTags.includes(t)?C.accent:"#333"}`,background:filterTags.includes(t)?"rgba(232,255,71,0.1)":"transparent",color:filterTags.includes(t)?C.accent:"#888",transition:"all .12s"}}>
+                            {filterTags.includes(t)?"✓ ":""}{t}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {allStatuses.length > 0 && (
+                    <div>
+                      <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Status</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                        {allStatuses.map(s=>(
+                          <span key={s} onClick={()=>toggleFilter(filterStatus,setFilterStatus,s)}
+                            style={{display:"inline-flex",alignItems:"center",padding:"3px 9px",borderRadius:12,fontSize:11,fontFamily:"'JetBrains Mono',monospace",cursor:"pointer",border:`1px solid ${filterStatus.includes(s)?C.accent:"#333"}`,background:filterStatus.includes(s)?"rgba(232,255,71,0.1)":"transparent",color:filterStatus.includes(s)?C.accent:"#888",transition:"all .12s"}}>
+                            {filterStatus.includes(s)?"✓ ":""}{s}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+            <div style={{position:"relative"}} ref={settingsRef}>
+              <button className="us-btn" onClick={()=>setShowColSettings(v=>!v)} style={{padding:"8px 12px",fontSize:12}}>⚙ COLUMNS</button>
+              {showColSettings && (
+                <div className="us-settings-panel">
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.16em",color:C.accent,textTransform:"uppercase",marginBottom:4}}>Columns</div>
+                  <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,marginBottom:12}}>Toggle · Drag to reorder</div>
+                  {orderedCols.map(col=>(
+                    <div
+                      key={col.key}
+                      className="us-col-toggle"
+                      draggable={!col.always}
+                      onDragStart={()=>onDragStart(col.key)}
+                      onDragOver={e=>onDragOver(e,col.key)}
+                      onDrop={onDrop}
+                      onClick={()=>!col.always&&toggleCol(col.key)}
+                      style={{cursor: col.always ? "default" : "grab"}}
+                    >
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        {!col.always && <span style={{color:"#444",fontSize:12,lineHeight:1}}>⠿</span>}
+                        {col.always && <span style={{width:16}}/>}
+                        <span className="us-col-toggle-label" style={{color: visibleCols.includes(col.key) ? C.text : "#555"}}>{col.label}</span>
+                      </div>
+                      <div className={`us-switch${visibleCols.includes(col.key)?" on":""}`} style={{opacity: col.always ? 0.4 : 1}}/>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button className="us-btn" onClick={() => setShowImport(true)} style={{whiteSpace:"nowrap"}}>⬆ IMPORT CSV</button>
+            <button className="us-btn" onClick={() => exportCSV(filtered)} style={{whiteSpace:"nowrap"}}>⬇ EXPORT CSV</button>
+            <button className="us-btn us-edit-contact-btn" onClick={onNew} style={{whiteSpace:"nowrap"}}>+ NEW CONTACT</button>
+            <input className="us-search" placeholder="Search contacts…" value={search} onChange={e=>{setSearch(e.target.value);setPage(0);}}/>
+          </div>
+        </div>
+      )}
+      {/* Mobile FAB */}
+      {mob && <button className="us-fab" onClick={onNew}>+</button>}
       {/* Active filter pills */}
       {activeFilterCount > 0 && (
         <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:16,alignItems:"center"}}>
