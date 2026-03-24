@@ -884,6 +884,7 @@ const ConversationsSection = ({ contactId, contactEmail, onContactUpdate }) => {
         threadId: conv.gmail_thread_id,
       });
       setReplyBody(""); setReplyingTo(null);
+      setMessages({});
       await gmailSyncContact(contactId, contactEmail);
       await loadConvs();
       const refreshed = await supaFetch(`/contacts?id=eq.${contactId}&select=*,contact_tags(tag_id,tags(id,name)),contact_buckets(bucket_id,buckets(id,name))`);
