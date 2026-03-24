@@ -970,7 +970,7 @@ const ConversationsSection = ({ contactId, contactEmail, onContactUpdate }) => {
                     ) : (
                       convMsgs.map((msg, idx) => {
                         const isOut = (msg.direction||"").toLowerCase() === "outbound";
-                        const isFirstInbound = !isOut && convMsgs.slice(0, idx).every(m => m.direction?.toLowerCase() === "outbound");
+                        const isFirstInbound = idx === 0 && !isOut;
                         return (
                           <React.Fragment key={msg.id}>
                             <div style={{display:"flex",flexDirection:"column",alignItems:isOut?"flex-end":"flex-start",paddingLeft:isOut?"15%":"0",paddingRight:isOut?"0":"15%"}}>
