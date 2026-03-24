@@ -805,7 +805,7 @@ const GmailStatusBar = () => {
 };
 
 // ── Conversations Section
-const ConversationsSection = ({ contactId, contactEmail }) => {
+const ConversationsSection = ({ contactId, contactEmail, onContactUpdate }) => {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -843,6 +843,8 @@ const ConversationsSection = ({ contactId, contactEmail }) => {
       const synced = await gmailSyncContact(contactId, contactEmail);
       setSyncMsg(`Synced ${synced.length} thread${synced.length !== 1 ? "s" : ""}`);
       await loadConvs();
+      const refreshed = await supaFetch(`/contacts?id=eq.${contactId}&select=*,contact_tags(tag_id,tags(id,name)),contact_buckets(bucket_id,buckets(id,name))`);
+      if (refreshed?.[0]) onContactUpdate?.(refreshed[0]);
     } catch(e) {
       setSyncMsg("Sync failed: " + e.message);
     }
@@ -1343,7 +1345,7 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
 
           <div style={{marginBottom:24}}>
             <div className="us-section-label" style={{marginBottom:12}}>Conversations</div>
-            <ConversationsSection contactId={contact.id} contactEmail={contact.email}/>
+            <ConversationsSection contactId={contact.id} contactEmail={contact.email} onContactUpdate={onSave}/>
           </div>
 
           {(contact.created_at||contact.updated_at) && (
