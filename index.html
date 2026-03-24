@@ -2266,11 +2266,11 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
                     <div style={{display:"flex",gap:8,alignItems:"center"}}>
                       <input type="number" min="0" max="100" placeholder="Min" value={filterScoreMin}
                         onChange={e=>{setFilterScoreMin(e.target.value);setPage(0);}}
-                        style={{width:72,background:"#111",border:"1px solid #333",borderRadius:4,color:C.text,fontFamily:"'JetBrains Mono',monospace",fontSize:12,padding:"4px 8px"}}/>
+                        style={{width:72,background:C.surface,border:`1px solid ${C.border}`,borderRadius:4,color:C.text,fontFamily:"'JetBrains Mono',monospace",fontSize:12,padding:"4px 8px"}}/>
                       <span style={{color:C.textMuted,fontSize:11}}>–</span>
                       <input type="number" min="0" max="100" placeholder="Max" value={filterScoreMax}
                         onChange={e=>{setFilterScoreMax(e.target.value);setPage(0);}}
-                        style={{width:72,background:"#111",border:"1px solid #333",borderRadius:4,color:C.text,fontFamily:"'JetBrains Mono',monospace",fontSize:12,padding:"4px 8px"}}/>
+                        style={{width:72,background:C.surface,border:`1px solid ${C.border}`,borderRadius:4,color:C.text,fontFamily:"'JetBrains Mono',monospace",fontSize:12,padding:"4px 8px"}}/>
                     </div>
                   </div>
                   {/* Last Activity Before */}
@@ -2278,7 +2278,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
                     <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Last Activity Before</div>
                     <input type="date" value={filterActivityBefore}
                       onChange={e=>{setFilterActivityBefore(e.target.value);setPage(0);}}
-                      style={{background:"#111",border:"1px solid #333",borderRadius:4,color:C.text,fontFamily:"'JetBrains Mono',monospace",fontSize:12,padding:"4px 8px",width:"100%"}}/>
+                      style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:4,color:C.text,fontFamily:"'JetBrains Mono',monospace",fontSize:12,padding:"4px 8px",width:"100%"}}/>
                   </div>
                 </div>
               )}
