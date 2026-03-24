@@ -1931,6 +1931,9 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
   const [filterBuckets, setFilterBuckets] = useState([]);
   const [filterTags, setFilterTags] = useState([]);
   const [filterStatus, setFilterStatus] = useState([]);
+  const [filterScoreMin, setFilterScoreMin] = useState("");
+  const [filterScoreMax, setFilterScoreMax] = useState("");
+  const [filterActivityBefore, setFilterActivityBefore] = useState("");
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 150;
   const filterRef = useRef(null);
@@ -1977,8 +1980,8 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
   const allStatuses = [...new Set(contacts.map(c => normalizeStatus(c.subscription_status||c.subscribed||c.sub_status)).filter(Boolean))].sort();
 
   const toggleFilter = (arr, setArr, val) => { setArr(prev => prev.includes(val) ? prev.filter(v=>v!==val) : [...prev, val]); setPage(0); };
-  const clearAllFilters = () => { setFilterBuckets([]); setFilterTags([]); setFilterStatus([]); setPage(0); };
-  const activeFilterCount = filterBuckets.length + filterTags.length + filterStatus.length;
+  const clearAllFilters = () => { setFilterBuckets([]); setFilterTags([]); setFilterStatus([]); setFilterScoreMin(""); setFilterScoreMax(""); setFilterActivityBefore(""); setPage(0); };
+  const activeFilterCount = filterBuckets.length + filterTags.length + filterStatus.length + (filterScoreMin!==""?1:0) + (filterScoreMax!==""?1:0) + (filterActivityBefore!==""?1:0);
 
   // ── Bulk selection
   const [selectedIds, setSelectedIds] = useState([]);
@@ -2064,6 +2067,15 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
     if (filterStatus.length > 0) {
       const cStatus = normalizeStatus(c.subscription_status||c.subscribed||c.sub_status||"");
       if (!filterStatus.includes(cStatus)) return false;
+    }
+    if (filterScoreMin !== "") {
+      if (c.ai_score == null || c.ai_score < Number(filterScoreMin)) return false;
+    }
+    if (filterScoreMax !== "") {
+      if (c.ai_score == null || c.ai_score > Number(filterScoreMax)) return false;
+    }
+    if (filterActivityBefore !== "") {
+      if (!c.last_activity_date || c.last_activity_date > filterActivityBefore) return false;
     }
     return true;
   }).sort((a, b) => {
@@ -2236,7 +2248,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
                     </div>
                   )}
                   {allStatuses.length > 0 && (
-                    <div>
+                    <div style={{marginBottom:14}}>
                       <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Status</div>
                       <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
                         {allStatuses.map(s=>(
@@ -2248,6 +2260,26 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
                       </div>
                     </div>
                   )}
+                  {/* AI Score Range */}
+                  <div style={{marginBottom:14}}>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>AI Score Range</div>
+                    <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                      <input type="number" min="0" max="100" placeholder="Min" value={filterScoreMin}
+                        onChange={e=>{setFilterScoreMin(e.target.value);setPage(0);}}
+                        style={{width:72,background:"#111",border:"1px solid #333",borderRadius:4,color:C.text,fontFamily:"'JetBrains Mono',monospace",fontSize:12,padding:"4px 8px"}}/>
+                      <span style={{color:C.textMuted,fontSize:11}}>–</span>
+                      <input type="number" min="0" max="100" placeholder="Max" value={filterScoreMax}
+                        onChange={e=>{setFilterScoreMax(e.target.value);setPage(0);}}
+                        style={{width:72,background:"#111",border:"1px solid #333",borderRadius:4,color:C.text,fontFamily:"'JetBrains Mono',monospace",fontSize:12,padding:"4px 8px"}}/>
+                    </div>
+                  </div>
+                  {/* Last Activity Before */}
+                  <div style={{marginBottom:4}}>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Last Activity Before</div>
+                    <input type="date" value={filterActivityBefore}
+                      onChange={e=>{setFilterActivityBefore(e.target.value);setPage(0);}}
+                      style={{background:"#111",border:"1px solid #333",borderRadius:4,color:C.text,fontFamily:"'JetBrains Mono',monospace",fontSize:12,padding:"4px 8px",width:"100%"}}/>
+                  </div>
                 </div>
               )}
             </div>
@@ -2306,6 +2338,16 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
               status: {s} <span className="us-tag-pill-remove">×</span>
             </span>
           ))}
+          {(filterScoreMin!==""||filterScoreMax!=="") && (
+            <span className="us-tag-pill" style={{fontSize:11}} onClick={()=>{setFilterScoreMin("");setFilterScoreMax("");setPage(0);}}>
+              score: {filterScoreMin||"0"}–{filterScoreMax||"100"} <span className="us-tag-pill-remove">×</span>
+            </span>
+          )}
+          {filterActivityBefore!=="" && (
+            <span className="us-tag-pill" style={{fontSize:11}} onClick={()=>{setFilterActivityBefore("");setPage(0);}}>
+              activity before: {filterActivityBefore} <span className="us-tag-pill-remove">×</span>
+            </span>
+          )}
           <span onClick={clearAllFilters} style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.red,cursor:"pointer",letterSpacing:"0.06em",textTransform:"uppercase",marginLeft:4}}>Clear all</span>
         </div>
       )}
