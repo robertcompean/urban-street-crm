@@ -546,9 +546,10 @@ const buildRawEmail = ({ to, subject, body, sigHtml, fromEmail }) => {
 // Send one email via Gmail API
 const gmailSend = async ({ to, subject, body, sigHtml, fromEmail, threadId }) => {
   const raw = buildRawEmail({ to, subject, body, sigHtml, fromEmail });
+  const payload = { raw };
+  if (threadId) payload.threadId = threadId;
   return gmailFetch("/users/me/messages/send", {
     method: "POST",
-    const payload = { raw }; if (threadId) payload.threadId = threadId;
     body: JSON.stringify(payload),
   });
 };
