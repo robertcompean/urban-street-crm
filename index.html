@@ -874,8 +874,8 @@ const ConversationsSection = ({ contactId, contactEmail, onContactUpdate }) => {
     if (!replyBody.trim()) return;
     setReplySending(true); setReplyError(null);
     try {
-      const sig = signatures ? signatures[0] : null;
-      const sigHtml = sig?.html_output || "";
+      const sigData = await supaFetch("/signatures?order=created_at.asc&limit=1");
+      const sigHtml = sigData?.[0]?.html_output || "";
       await gmailSend({
         to: contactEmail,
         subject: "Re: " + (conv.subject || ""),
