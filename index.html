@@ -641,6 +641,21 @@ const gmailSyncContact = async (contactId, contactEmail) => {
     }
     synced.push(conv);
   }
+
+  // Update last_activity_date to the most recent thread date
+  if (synced.length > 0) {
+    try {
+      const convDates = await supaFetch(`/conversations?contact_id=eq.${contactId}&select=last_message_at&order=last_message_at.desc&limit=1`);
+      if (convDates?.length && convDates[0].last_message_at) {
+        const latestDate = convDates[0].last_message_at.split("T")[0];
+        await supaFetch(`/contacts?id=eq.${contactId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ last_activity_date: latestDate }),
+        });
+      }
+    } catch(e) { console.error("last_activity_date update error:", e); }
+  }
+
   return synced;
 };
 
