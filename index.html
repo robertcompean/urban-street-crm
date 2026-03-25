@@ -1079,7 +1079,7 @@ const QuickComposeModal = ({ contact, onClose, onSent }) => {
           {templates.length > 0 && (
             <div>
               <div className="us-section-label" style={{marginBottom:5}}>Use Template</div>
-              <select className="us-select" value="" onChange={e=>{const t=templates.find(x=>x.id===e.target.value);if(t){setSubject(t.subject||"");setBody(t.body||"");const sig=signatures.find(s=>s.id===t.signature_id);if(sig)setSelectedSig(sig.id);}}}>
+              <select className="us-select" value="" onChange={e=>{const t=templates.find(x=>x.id===e.target.value);if(t){setSubject(applyMerge(t.subject||"",contact));setBody(applyMerge(t.body||"",contact));const sig=signatures.find(s=>s.id===t.signature_id);if(sig)setSelectedSig(sig.id);}}}>
                 <option value="">— Compose new —</option>
                 {templates.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
