@@ -2182,8 +2182,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
         let actColor = C.textSub;
         if (c.ai_score >= 35 && actDate) {
           const days = Math.floor((new Date() - new Date(actDate)) / 86400000);
-          if (days >= 60) actColor = "#1a3a6b";
-          else if (days >= 30) actColor = "#e8622a";
+          if (days >= 60) actColor = "#e8622a";
         }
         return <td key={key} className="us-mono" style={{fontSize:13,color:actColor,fontWeight:actColor!==C.textSub?600:400}}>{fmt.date(actDate)}</td>;
       }
