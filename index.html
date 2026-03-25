@@ -824,7 +824,7 @@ const ConversationsSection = ({ contactId, contactEmail, onContactUpdate }) => {
   const loadConvs = async () => {
     setLoading(true);
     try {
-      const data = await supaFetch(`/conversations?contact_id=eq.${contactId}&order=last_message_at.desc&select=*,messages(body_text,direction,sent_at)`);
+      const data = await supaFetch(`/conversations?contact_id=eq.${contactId}&order=last_message_at.desc&limit=5&select=*,messages(body_text,direction,sent_at)`);
       // For each conversation, find the most recent message snippet
       const convs = (data || []).map(conv => {
         const msgs = (conv.messages || []).sort((a,b) => new Date(b.sent_at) - new Date(a.sent_at));
