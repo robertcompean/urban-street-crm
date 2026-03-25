@@ -1143,7 +1143,7 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
     try {
       const payload = {};
       ["first_name","last_name","email","cell","landline","company","subscription_status","last_activity_date","notes","cs_responsiveness","cs_incoming_ads","cs_done_deal"].forEach(k => {
-        if (form[k] !== undefined) payload[k] = form[k];
+        if (form[k] !== undefined) payload[k] = typeof form[k] === "string" ? form[k].trim() : form[k];
       });
       await supaFetch(`/contacts?id=eq.${contact.id}`, { method:"PATCH", body:JSON.stringify(payload) });
       // Save custom field values — delete existing then re-insert
@@ -1468,7 +1468,7 @@ const NewContactForm = ({ onBack, onCreated }) => {
     setSaving(true);
     try {
       const payload = {...form};
-      Object.keys(payload).forEach(k => { if (payload[k]==="") delete payload[k]; });
+      Object.keys(payload).forEach(k => { if (typeof payload[k] === "string") payload[k] = payload[k].trim(); if (payload[k]==="") delete payload[k]; });
       const result = await supaFetch("/contacts", { method:"POST", body:JSON.stringify(payload) });
       const newContact = Array.isArray(result) ? result[0] : result;
       if (selectedTagIds.length > 0) {
