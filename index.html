@@ -2177,7 +2177,16 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
       case "cell": return <td key={key} className="us-mono" style={{fontSize:13,color:C.text}}>{fmt.phone(c.cell||c.mobile||c.cell_phone)}</td>;
       case "bucket": return <td key={key}><div style={{display:"flex",flexWrap:"wrap",gap:4}}>{(c.contact_buckets||[]).length>0?(c.contact_buckets||[]).map(cb=>cb.buckets?<span key={cb.bucket_id} className="us-tag">{cb.buckets.name}</span>:null):<span style={{color:C.textMuted}}>—</span>}</div></td>;
       case "status": return <td key={key}><span style={{display:"flex",alignItems:"center",gap:6}}><span style={{width:6,height:6,borderRadius:"50%",background:color,display:"inline-block",flexShrink:0}}/><span className="us-mono" style={{fontSize:11,color,letterSpacing:"0.06em"}}>{subStatus!=null?String(subStatus).toUpperCase():"—"}</span></span></td>;
-      case "last_activity": return <td key={key} className="us-mono" style={{fontSize:13,color:C.textSub}}>{fmt.date(c.last_activity_date||c.last_activity||c.last_active)}</td>;
+      case "last_activity": {
+        const actDate = c.last_activity_date||c.last_activity||c.last_active;
+        let actColor = C.textSub;
+        if (c.ai_score >= 35 && actDate) {
+          const days = Math.floor((new Date() - new Date(actDate)) / 86400000);
+          if (days >= 60) actColor = "#cc2222";
+          else if (days >= 30) actColor = "#e8622a";
+        }
+        return <td key={key} className="us-mono" style={{fontSize:13,color:actColor,fontWeight:actColor!==C.textSub?600:400}}>{fmt.date(actDate)}</td>;
+      }
       case "tags": return <td key={key}><div style={{display:"flex",flexWrap:"wrap",gap:4}}>{(c.contact_tags||[]).map(ct=>ct.tags?<span key={ct.tag_id} className="us-tag-pill" style={{fontSize:10,padding:"2px 7px"}}>{ct.tags.name}</span>:null)}{(!c.contact_tags||c.contact_tags.length===0)&&<span style={{color:C.textMuted,fontSize:12}}>—</span>}</div></td>;
       case "cs_responsiveness": return <td key={key} className="us-mono" style={{fontSize:12,color:C.textSub}}>{c.cs_responsiveness||"—"}</td>;
       case "cs_incoming_ads": return <td key={key} className="us-mono" style={{fontSize:12,color:C.textSub}}>{c.cs_incoming_ads||"—"}</td>;
