@@ -2180,7 +2180,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
       case "last_activity": {
         const actDate = c.last_activity_date||c.last_activity||c.last_active;
         let actColor = C.textSub;
-        if (c.ai_score >= 35 && actDate) {
+        const SKIP_BUCKETS = ["No Marketing","Investor"]; const eligibleBucket = filterBuckets.length === 0 || filterBuckets.some(b => !SKIP_BUCKETS.includes(b)); if (eligibleBucket && actDate) {
           const days = Math.floor((new Date() - new Date(actDate)) / 86400000);
           if (days >= 60) actColor = "#e8622a";
         }
