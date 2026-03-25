@@ -1,15 +1,9 @@
 const SUPABASE_URL = "https://kdxbkwcvrihcxqhukjee.supabase.co";
-const SUPABASE_SERVICE_KEY = "sb_publishable_9whlg1wqquwmjgivsavs0A_H7HpbgE9";
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 
-// Only sync contacts active in the last 90 days
-const ACTIVE_DAYS = 90;
-// Contacts per cron run
-const BATCH_SIZE = 50;
-// Delay between Gmail API calls (ms)
-const DELAY_MS = 80;
-
+// Get a fresh access token using the stored refresh token
 const refreshAccessToken = async (refreshToken) => {
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -26,26 +20,27 @@ const refreshAccessToken = async (refreshToken) => {
   return data.access_token;
 };
 
+// Fetch Gmail threads for a given email address
 const fetchGmailThreads = async (accessToken, contactEmail, maxResults = 20) => {
   const query = encodeURIComponent(`from:${contactEmail} OR to:${contactEmail}`);
   const res = await fetch(
     `https://gmail.googleapis.com/gmail/v1/users/me/threads?q=${query}&maxResults=${maxResults}`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
   );
-  if (res.status === 429) throw new Error("RATE_LIMIT");
   const data = await res.json();
   return data.threads || [];
 };
 
+// Fetch full thread details
 const fetchThread = async (accessToken, threadId) => {
   const res = await fetch(
     `https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}?format=full`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
   );
-  if (res.status === 429) throw new Error("RATE_LIMIT");
   return await res.json();
 };
 
+// Decode base64 Gmail message body
 const decodeBody = (part) => {
   if (!part) return "";
   if (part.body?.data) {
@@ -63,6 +58,7 @@ const decodeBody = (part) => {
 const getHeader = (headers, name) =>
   headers?.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || "";
 
+// Upsert conversation and messages into Supabase
 const upsertConversation = async (contactId, thread, userEmail) => {
   const msgs = thread.messages || [];
   if (msgs.length === 0) return;
@@ -71,81 +67,38 @@ const upsertConversation = async (contactId, thread, userEmail) => {
   const headers = firstMsg.payload?.headers || [];
   const subject = getHeader(headers, "subject") || "(no subject)";
   const lastMsg = msgs[msgs.length - 1];
-  const lastDate = new Date(parseInt(lastMsg.internalDate)).toISOString();
   const lastHeaders = lastMsg.payload?.headers || [];
-  const lastFromEmail = getHeader(lastHeaders, "from");
-  const lastDirection = lastFromEmail.toLowerCase().includes(userEmail.split("@")[0].toLowerCase()) ? "outbound" : "inbound";
-  const snippet = decodeBody(lastMsg.payload).slice(0, 120).replace(/\s+/g, " ").trim();
+  const lastDate = new Date(parseInt(lastMsg.internalDate)).toISOString();
 
-  // Check for existing conversation first to avoid duplicates
-  const existingRes = await fetch(
-    `${SUPABASE_URL}/rest/v1/conversations?contact_id=eq.${contactId}&gmail_thread_id=eq.${thread.id}&select=id`,
-    { headers: { "apikey": SUPABASE_SERVICE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}` } }
-  );
-  const existing = await existingRes.json();
+  // Upsert conversation
+  const convRes = await fetch(`${SUPABASE_URL}/rest/v1/conversations`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_SERVICE_KEY,
+      "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
+      "Prefer": "resolution=merge-duplicates,return=representation",
+    },
+    body: JSON.stringify({
+      contact_id: contactId,
+      subject,
+      gmail_thread_id: thread.id,
+      last_message_at: lastDate,
+      updated_at: new Date().toISOString(),
+    }),
+  });
 
-  let conv;
-  if (existing?.length) {
-    conv = existing[0];
-    await fetch(`${SUPABASE_URL}/rest/v1/conversations?id=eq.${conv.id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": SUPABASE_SERVICE_KEY,
-        "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
-        "Prefer": "",
-      },
-      body: JSON.stringify({ last_message_at: lastDate, last_direction: lastDirection, snippet, updated_at: new Date().toISOString() }),
-    });
-  } else {
-    const convRes = await fetch(`${SUPABASE_URL}/rest/v1/conversations`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apikey": SUPABASE_SERVICE_KEY,
-        "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
-        "Prefer": "return=representation",
-      },
-      body: JSON.stringify({
-        contact_id: contactId,
-        subject,
-        snippet,
-        gmail_thread_id: thread.id,
-        last_message_at: lastDate,
-        last_direction: lastDirection,
-        updated_at: new Date().toISOString(),
-      }),
-    });
-    const convData = await convRes.json();
-    conv = Array.isArray(convData) ? convData[0] : convData;
-
-    if (!conv?.id) {
-      // Constraint violation fallback
-      const retryRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/conversations?contact_id=eq.${contactId}&gmail_thread_id=eq.${thread.id}&select=id`,
-        { headers: { "apikey": SUPABASE_SERVICE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}` } }
-      );
-      const retry = await retryRes.json();
-      conv = retry?.[0];
-    }
-  }
-
+  const convData = await convRes.json();
+  const conv = Array.isArray(convData) ? convData[0] : convData;
   if (!conv?.id) return;
 
+  // Upsert each message
   for (const msg of msgs) {
     const mHeaders = msg.payload?.headers || [];
     const fromEmail = getHeader(mHeaders, "from");
     const sentAt = new Date(parseInt(msg.internalDate)).toISOString();
     const bodyText = decodeBody(msg.payload).slice(0, 4000);
-    const direction = fromEmail.toLowerCase().includes(userEmail.split("@")[0].toLowerCase()) ? "outbound" : "inbound";
-
-    // Check if message already exists
-    const existingMsgRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/messages?gmail_message_id=eq.${msg.id}&select=id`,
-      { headers: { "apikey": SUPABASE_SERVICE_KEY, "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}` } }
-    );
-    const existingMsg = await existingMsgRes.json();
-    if (existingMsg?.length) continue;
+    const direction = fromEmail.includes(userEmail) ? "outbound" : "inbound";
 
     await fetch(`${SUPABASE_URL}/rest/v1/messages`, {
       method: "POST",
@@ -153,7 +106,7 @@ const upsertConversation = async (contactId, thread, userEmail) => {
         "Content-Type": "application/json",
         "apikey": SUPABASE_SERVICE_KEY,
         "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
-        "Prefer": "",
+        "Prefer": "resolution=merge-duplicates",
       },
       body: JSON.stringify({
         conversation_id: conv.id,
@@ -167,6 +120,7 @@ const upsertConversation = async (contactId, thread, userEmail) => {
     });
   }
 
+  // Update contact last_activity_date
   await fetch(`${SUPABASE_URL}/rest/v1/contacts?id=eq.${contactId}`, {
     method: "PATCH",
     headers: {
@@ -179,24 +133,13 @@ const upsertConversation = async (contactId, thread, userEmail) => {
   });
 };
 
-const updateCursor = async (tokenId, newOffset) => {
-  await fetch(`${SUPABASE_URL}/rest/v1/gmail_tokens?id=eq.${tokenId}`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      "apikey": SUPABASE_SERVICE_KEY,
-      "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
-      "Prefer": "",
-    },
-    body: JSON.stringify({ sync_offset: newOffset }),
-  });
-};
-
 export default async function handler(req, res) {
+  // Allow manual trigger via POST or cron via GET
   if (req.method !== "GET" && req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
+  // Simple auth check for manual triggers
   const authHeader = req.headers.authorization;
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
@@ -204,7 +147,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Get token + cursor
+    // Get stored refresh token
     const tokenRes = await fetch(`${SUPABASE_URL}/rest/v1/gmail_tokens?select=*&limit=1`, {
       headers: {
         "apikey": SUPABASE_SERVICE_KEY,
@@ -213,89 +156,59 @@ export default async function handler(req, res) {
     });
     const tokens = await tokenRes.json();
     if (!tokens || tokens.length === 0) {
-      return res.status(400).json({ error: "No Gmail token found." });
+      return res.status(400).json({ error: "No Gmail token found. Connect Gmail first." });
     }
 
-    const { id: tokenId, refresh_token, user_email, sync_offset } = tokens[0];
-    const currentOffset = sync_offset || 0;
+    const { refresh_token, user_email } = tokens[0];
     const accessToken = await refreshAccessToken(refresh_token);
 
-    // Only sync contacts active in the last 90 days
-    const cutoff = new Date(Date.now() - ACTIVE_DAYS * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-
-    // Count active contacts with email
-    const countRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/contacts?email=not.is.null&last_activity_date=gte.${cutoff}&select=id&limit=1`,
-      {
-        headers: {
-          "apikey": SUPABASE_SERVICE_KEY,
-          "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
-          "Prefer": "count=exact",
-          "Range-Unit": "items",
-          "Range": "0-0",
-        },
-      }
-    );
-    const totalCount = parseInt(countRes.headers.get("content-range")?.split("/")[1] || "0");
-
-    // Fetch this batch — active contacts only
-    const batchRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/contacts?email=not.is.null&last_activity_date=gte.${cutoff}&select=id,email&limit=${BATCH_SIZE}&offset=${currentOffset}&order=last_activity_date.desc`,
-      {
-        headers: {
-          "apikey": SUPABASE_SERVICE_KEY,
-          "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
-        },
-      }
-    );
-    const batch = await batchRes.json();
-
-    if (!batch || batch.length === 0) {
-      await updateCursor(tokenId, 0);
-      return res.status(200).json({ ok: true, message: "Sync complete, cursor reset", total: totalCount });
+    // Get all contacts with email addresses
+    let allContacts = [];
+    let offset = 0;
+    const PAGE = 1000;
+    while (true) {
+      const batch = await fetch(
+        `${SUPABASE_URL}/rest/v1/contacts?email=not.is.null&select=id,email&limit=${PAGE}&offset=${offset}`,
+        {
+          headers: {
+            "apikey": SUPABASE_SERVICE_KEY,
+            "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
+          },
+        }
+      );
+      const data = await batch.json();
+      if (!data || data.length === 0) break;
+      allContacts = allContacts.concat(data);
+      if (data.length < PAGE) break;
+      offset += PAGE;
     }
 
-    console.log(`Syncing active contacts ${currentOffset}–${currentOffset + batch.length} of ${totalCount} (last ${ACTIVE_DAYS} days)`);
+    console.log(`Syncing Gmail for ${allContacts.length} contacts as ${user_email}`);
 
     let synced = 0;
     let errors = 0;
-    let rateLimited = false;
 
-    for (const contact of batch) {
-      if (rateLimited) break;
+    for (const contact of allContacts) {
       try {
         const threads = await fetchGmailThreads(accessToken, contact.email);
         for (const thread of threads) {
           const full = await fetchThread(accessToken, thread.id);
           await upsertConversation(contact.id, full, user_email);
-          await new Promise(r => setTimeout(r, DELAY_MS));
         }
         if (threads.length > 0) synced++;
-        await new Promise(r => setTimeout(r, DELAY_MS));
+        // Small delay to avoid Gmail rate limits
+        await new Promise(r => setTimeout(r, 100));
       } catch (err) {
-        if (err.message === "RATE_LIMIT") {
-          console.warn(`Rate limited at contact ${contact.email}, stopping batch`);
-          rateLimited = true;
-        } else {
-          console.error(`Error syncing ${contact.email}:`, err.message);
-          errors++;
-        }
+        console.error(`Error syncing ${contact.email}:`, err.message);
+        errors++;
       }
     }
 
-    const newOffset = currentOffset + batch.length >= totalCount ? 0 : currentOffset + batch.length;
-    await updateCursor(tokenId, newOffset);
-
     return res.status(200).json({
       ok: true,
-      batch_start: currentOffset,
-      batch_size: batch.length,
+      total: allContacts.length,
       synced,
       errors,
-      rate_limited: rateLimited,
-      next_offset: newOffset,
-      total_active: totalCount,
-      active_days: ACTIVE_DAYS,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
