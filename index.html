@@ -1031,15 +1031,17 @@ const QuickComposeModal = ({ contact, onClose, onSent }) => {
   const [body, setBody] = useState("");
   const [signatures, setSignatures] = useState([]);
   const [selectedSig, setSelectedSig] = useState(null);
+  const [templates, setTemplates] = useState([]);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState(null);
   const name = [contact.first_name, contact.last_name].filter(Boolean).join(" ") || contact.name || contact.email;
 
   useEffect(() => {
-    supaFetch("/signatures?order=created_at.asc").then(sigs => {
+    supaFetch("/templates?order=name.asc").then(t => setTemplates(t||[])).catch(()=>{});
+    supaFetch("/signatures?order=name.asc").then(sigs => {
       setSignatures(sigs || []);
-      if (sigs && sigs.length > 0) setSelectedSig(sigs[0].id);
+      if (sigs && sigs.length > 0) { const def = sigs.find(s=>s.is_default) || sigs[0]; setSelectedSig(def.id); }
     }).catch(() => {});
   }, []);
 
@@ -1074,6 +1076,15 @@ const QuickComposeModal = ({ contact, onClose, onSent }) => {
         </div>
         {/* Body */}
         <div style={{padding:"16px 20px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto",flex:1}}>
+          {templates.length > 0 && (
+            <div>
+              <div className="us-section-label" style={{marginBottom:5}}>Use Template</div>
+              <select className="us-select" value="" onChange={e=>{const t=templates.find(x=>x.id===e.target.value);if(t){setSubject(t.subject||"");setBody(t.body||"");const sig=signatures.find(s=>s.id===t.signature_id);if(sig)setSelectedSig(sig.id);}}}>
+                <option value="">— Compose new —</option>
+                {templates.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+            </div>
+          )}
           <div>
             <div className="us-section-label" style={{marginBottom:5}}>Subject</div>
             <input className="us-input" value={subject} onChange={e=>setSubject(e.target.value)} placeholder="Subject…"/>
