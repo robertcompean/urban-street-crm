@@ -1213,7 +1213,7 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
             <QuickComposeModal
               contact={contact}
               onClose={()=>setShowCompose(false)}
-              onSent={()=>setShowCompose(false)}
+              onSent={async ()=>{ setShowCompose(false); await gmailSyncContact(contact.id, contact.email); const refreshed = await supaFetch(`/contacts?id=eq.${contact.id}&select=*,contact_tags(tag_id,tags(id,name)),contact_buckets(bucket_id,buckets(id,name))`); if (refreshed?.[0]) onSave?.(refreshed[0]); }}
             />
           )}
           {!editing && (
