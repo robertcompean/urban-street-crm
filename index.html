@@ -2395,7 +2395,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
       : s || null;
     const color = subColor(subStatus);
     switch(key) {
-      case "name": return <td key={key} style={{fontWeight:700,fontSize:15,color:C.text}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}><span>{name}</span>{mob && c.ai_score!=null && <AiScoreBadge score={c.ai_score} size="sm"/>}</div></td>;
+      case "name": { const hasInbound = c.ai_score != null && parseInt(c.ai_score) >= 35 && c.last_email_direction === "inbound"; return <td key={key} style={{fontWeight:700,fontSize:15,color:C.text}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}><div style={{display:"flex",alignItems:"center",gap:6}}>{hasInbound && <span title="Unread inbound email" style={{width:8,height:8,borderRadius:"50%",background:"#e8622a",flexShrink:0,boxShadow:"0 0 0 2px rgba(232,98,42,0.25)"}}/>}<span>{name}</span></div>{mob && c.ai_score!=null && <AiScoreBadge score={c.ai_score} size="sm"/>}</div></td>; }
       case "ai_score": return <td key={key}>{c.ai_score !== null && c.ai_score !== undefined ? <AiScoreBadge score={c.ai_score} size="sm"/> : <span style={{color:C.textMuted}}>—</span>}</td>;
       case "email": return <td key={key} className="us-mono" style={{fontSize:13,color:C.textSub}}>{c.email||"—"}</td>;
       case "cell": return <td key={key} className="us-mono" style={{fontSize:13,color:C.text}}>{fmt.phone(c.cell||c.mobile||c.cell_phone)}</td>;

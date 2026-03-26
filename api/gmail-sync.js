@@ -3,7 +3,12 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 
-// Get a fresh access token using the stored refresh token
+const BATCH_SIZE = 5;        // contacts processed in parallel
+const MAX_THREADS = 10;      // threads fetched per contact
+const TIMEOUT_MS = 250_000;  // stop at 250s, leave buffer for Vercel 300s limit
+
+// ─── Auth ────────────────────────────────────────────────────────────────────
+
 const refreshAccessToken = async (refreshToken) => {
   const res = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -20,8 +25,9 @@ const refreshAccessToken = async (refreshToken) => {
   return data.access_token;
 };
 
-// Fetch Gmail threads for a given email address
-const fetchGmailThreads = async (accessToken, contactEmail, maxResults = 20) => {
+// ─── Gmail API ───────────────────────────────────────────────────────────────
+
+const fetchGmailThreads = async (accessToken, contactEmail, maxResults = MAX_THREADS) => {
   const query = encodeURIComponent(`from:${contactEmail} OR to:${contactEmail}`);
   const res = await fetch(
     `https://gmail.googleapis.com/gmail/v1/users/me/threads?q=${query}&maxResults=${maxResults}`,
@@ -31,7 +37,6 @@ const fetchGmailThreads = async (accessToken, contactEmail, maxResults = 20) => 
   return data.threads || [];
 };
 
-// Fetch full thread details
 const fetchThread = async (accessToken, threadId) => {
   const res = await fetch(
     `https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}?format=full`,
@@ -40,7 +45,8 @@ const fetchThread = async (accessToken, threadId) => {
   return await res.json();
 };
 
-// Decode base64 Gmail message body
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 const decodeBody = (part) => {
   if (!part) return "";
   if (part.body?.data) {
@@ -58,7 +64,8 @@ const decodeBody = (part) => {
 const getHeader = (headers, name) =>
   headers?.find(h => h.name.toLowerCase() === name.toLowerCase())?.value || "";
 
-// Upsert conversation and messages into Supabase
+// ─── Supabase writes ──────────────────────────────────────────────────────────
+
 const upsertConversation = async (contactId, thread, userEmail) => {
   const msgs = thread.messages || [];
   if (msgs.length === 0) return;
@@ -69,6 +76,10 @@ const upsertConversation = async (contactId, thread, userEmail) => {
   const lastMsg = msgs[msgs.length - 1];
   const lastHeaders = lastMsg.payload?.headers || [];
   const lastDate = new Date(parseInt(lastMsg.internalDate)).toISOString();
+
+  // Determine direction of most recent message
+  const lastFrom = getHeader(lastHeaders, "from");
+  const lastDirection = lastFrom.includes(userEmail) ? "outbound" : "inbound";
 
   // Upsert conversation
   const convRes = await fetch(`${SUPABASE_URL}/rest/v1/conversations`, {
@@ -84,6 +95,7 @@ const upsertConversation = async (contactId, thread, userEmail) => {
       subject,
       gmail_thread_id: thread.id,
       last_message_at: lastDate,
+      last_direction: lastDirection,
       updated_at: new Date().toISOString(),
     }),
   });
@@ -127,19 +139,48 @@ const upsertConversation = async (contactId, thread, userEmail) => {
       "Content-Type": "application/json",
       "apikey": SUPABASE_SERVICE_KEY,
       "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
-      "Prefer": "",
     },
     body: JSON.stringify({ last_activity_date: lastDate.split("T")[0] }),
   });
 };
 
+// After all threads for a contact are processed:
+// - query the most recent conversation's last_direction
+// - write last_email_direction + gmail_synced_at back to contacts
+const updateContactSyncMeta = async (contactId) => {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/conversations?contact_id=eq.${contactId}&order=last_message_at.desc&limit=1&select=last_direction`,
+    {
+      headers: {
+        "apikey": SUPABASE_SERVICE_KEY,
+        "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    }
+  );
+  const data = await res.json();
+  const lastEmailDirection = data?.[0]?.last_direction ?? null;
+
+  await fetch(`${SUPABASE_URL}/rest/v1/contacts?id=eq.${contactId}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_SERVICE_KEY,
+      "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
+    },
+    body: JSON.stringify({
+      gmail_synced_at: new Date().toISOString(),
+      last_email_direction: lastEmailDirection,
+    }),
+  });
+};
+
+// ─── Handler ──────────────────────────────────────────────────────────────────
+
 export default async function handler(req, res) {
-  // Allow manual trigger via POST or cron via GET
   if (req.method !== "GET" && req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  // Simple auth check for manual triggers
   const authHeader = req.headers.authorization;
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
@@ -162,53 +203,74 @@ export default async function handler(req, res) {
     const { refresh_token, user_email } = tokens[0];
     const accessToken = await refreshAccessToken(refresh_token);
 
-    // Get all contacts with email addresses
-    let allContacts = [];
-    let offset = 0;
-    const PAGE = 1000;
-    while (true) {
-      const batch = await fetch(
-        `${SUPABASE_URL}/rest/v1/contacts?email=not.is.null&select=id,email&limit=${PAGE}&offset=${offset}`,
-        {
-          headers: {
-            "apikey": SUPABASE_SERVICE_KEY,
-            "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
-          },
-        }
-      );
-      const data = await batch.json();
-      if (!data || data.length === 0) break;
-      allContacts = allContacts.concat(data);
-      if (data.length < PAGE) break;
-      offset += PAGE;
+    // Fetch sync-eligible contacts via DB function (scored, recently active, or
+    // previously emailed) — ordered stalest gmail_synced_at first.
+    const eligibleRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_sync_eligible_contacts`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_SERVICE_KEY,
+        "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+      body: JSON.stringify({}),
+    });
+    const allContacts = await eligibleRes.json();
+    if (!Array.isArray(allContacts)) {
+      return res.status(500).json({ error: "Failed to fetch eligible contacts", detail: allContacts });
     }
 
-    console.log(`Syncing Gmail for ${allContacts.length} contacts as ${user_email}`);
+    console.log(`Syncing Gmail for ${allContacts.length} eligible contacts (stalest first) as ${user_email}`);
 
+    const startTime = Date.now();
     let synced = 0;
     let errors = 0;
+    let processed = 0;
 
-    for (const contact of allContacts) {
-      try {
-        const threads = await fetchGmailThreads(accessToken, contact.email);
-        for (const thread of threads) {
-          const full = await fetchThread(accessToken, thread.id);
-          await upsertConversation(contact.id, full, user_email);
-        }
-        if (threads.length > 0) synced++;
-        // Small delay to avoid Gmail rate limits
-        await new Promise(r => setTimeout(r, 100));
-      } catch (err) {
-        console.error(`Error syncing ${contact.email}:`, err.message);
-        errors++;
+    // Process in parallel batches of BATCH_SIZE
+    for (let i = 0; i < allContacts.length; i += BATCH_SIZE) {
+      // Hard stop before Vercel kills us
+      if (Date.now() - startTime > TIMEOUT_MS) {
+        console.log(`Timeout reached after processing ${processed} contacts — stopping cleanly.`);
+        break;
       }
+
+      const chunk = allContacts.slice(i, i + BATCH_SIZE);
+
+      await Promise.all(chunk.map(async (contact) => {
+        try {
+          // Fetch thread list, then all thread details in parallel
+          const threads = await fetchGmailThreads(accessToken, contact.email);
+          if (threads.length > 0) {
+            const fullThreads = await Promise.all(
+              threads.map(t => fetchThread(accessToken, t.id))
+            );
+            for (const full of fullThreads) {
+              await upsertConversation(contact.id, full, user_email);
+            }
+            synced++;
+          }
+          // Always stamp gmail_synced_at so this contact moves to back of queue
+          await updateContactSyncMeta(contact.id);
+        } catch (err) {
+          console.error(`Error syncing ${contact.email}:`, err.message);
+          errors++;
+        }
+      }));
+
+      processed += chunk.length;
+
+      // Brief pause between batches to respect Gmail rate limits
+      await new Promise(r => setTimeout(r, 150));
     }
 
+    const elapsed = Math.round((Date.now() - startTime) / 1000);
     return res.status(200).json({
       ok: true,
       total: allContacts.length,
+      processed,
       synced,
       errors,
+      elapsed_seconds: elapsed,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
