@@ -3,7 +3,7 @@ const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 
-const BATCH_SIZE = 5;        // contacts processed in parallel
+const BATCH_SIZE = 10;       // contacts processed in parallel
 const MAX_THREADS = 10;      // threads fetched per contact
 const TIMEOUT_MS = 250_000;  // stop at 250s, leave buffer for Vercel 300s limit
 
@@ -104,8 +104,8 @@ const upsertConversation = async (contactId, thread, userEmail) => {
   const conv = Array.isArray(convData) ? convData[0] : convData;
   if (!conv?.id) return;
 
-  // Upsert each message
-  for (const msg of msgs) {
+  // Upsert all messages in parallel
+  await Promise.all(msgs.map(async (msg) => {
     const mHeaders = msg.payload?.headers || [];
     const fromEmail = getHeader(mHeaders, "from");
     const sentAt = new Date(parseInt(msg.internalDate)).toISOString();
@@ -130,7 +130,7 @@ const upsertConversation = async (contactId, thread, userEmail) => {
         sent_at: sentAt,
       }),
     });
-  }
+  }));
 
   // Update contact last_activity_date
   await fetch(`${SUPABASE_URL}/rest/v1/contacts?id=eq.${contactId}`, {
@@ -244,9 +244,8 @@ export default async function handler(req, res) {
             const fullThreads = await Promise.all(
               threads.map(t => fetchThread(accessToken, t.id))
             );
-            for (const full of fullThreads) {
-              await upsertConversation(contact.id, full, user_email);
-            }
+            // Upsert all threads in parallel
+            await Promise.all(fullThreads.map(full => upsertConversation(contact.id, full, user_email)));
             synced++;
           }
           // Always stamp gmail_synced_at so this contact moves to back of queue
@@ -260,7 +259,7 @@ export default async function handler(req, res) {
       processed += chunk.length;
 
       // Brief pause between batches to respect Gmail rate limits
-      await new Promise(r => setTimeout(r, 150));
+      await new Promise(r => setTimeout(r, 50));
     }
 
     const elapsed = Math.round((Date.now() - startTime) / 1000);
