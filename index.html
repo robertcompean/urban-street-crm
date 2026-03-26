@@ -1023,6 +1023,161 @@ const ConversationsSection = ({ contactId, contactEmail, onContactUpdate }) => {
   );
 };
 
+
+// ── Duplicate Detection Modal
+const fuzzyScore = (a, b) => {
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9 ]/g,"").trim();
+  const tokens = s => norm(s).split(/\s+/).sort().join(" ");
+  const ta = tokens(a), tb = tokens(b);
+  if (ta === tb) return 1.0;
+  const longer = ta.length > tb.length ? ta : tb;
+  const shorter = ta.length > tb.length ? tb : ta;
+  if (longer.length === 0) return 1.0;
+  let matches = 0;
+  for (let i = 0; i < shorter.length; i++) {
+    if (longer.includes(shorter[i])) matches++;
+  }
+  return matches / longer.length;
+};
+
+const findDuplicatePairs = (contacts) => {
+  const pairs = [];
+  const seen = new Set();
+  for (let i = 0; i < contacts.length; i++) {
+    for (let j = i + 1; j < contacts.length; j++) {
+      const a = contacts[i], b = contacts[j];
+      const nameA = ((a.first_name||"")+" "+(a.last_name||"")).trim();
+      const nameB = ((b.first_name||"")+" "+(b.last_name||"")).trim();
+      if (!nameA || !nameB) continue;
+      if (a.email && b.email && a.email.toLowerCase() === b.email.toLowerCase()) continue; // already caught by email uniqueness
+      const score = fuzzyScore(nameA, nameB);
+      if (score >= 0.8) {
+        const key = [a.id,b.id].sort().join("-");
+        if (!seen.has(key)) { seen.add(key); pairs.push({ a, b, score, nameA, nameB }); }
+      }
+    }
+  }
+  return pairs.sort((x,y) => y.score - x.score);
+};
+
+const DuplicatesModal = ({ contacts, onClose, onMerge }) => {
+  const [pairs, setPairs] = React.useState(() => findDuplicatePairs(contacts));
+  const [dismissed, setDismissed] = React.useState(new Set());
+  const [merging, setMerging] = React.useState(null);
+  const [mergeWinner, setMergeWinner] = React.useState(null);
+  const [mergeMsg, setMergeMsg] = React.useState(null);
+
+  const visible = pairs.filter(p => !dismissed.has([p.a.id,p.b.id].sort().join("-")));
+
+  const dismiss = (p) => setDismissed(d => new Set([...d, [p.a.id,p.b.id].sort().join("-")]));
+
+  const startMerge = (p) => { setMerging(p); setMergeWinner(p.a.id); setMergeMsg(null); };
+
+  const confirmMerge = async () => {
+    const winner = mergeWinner === merging.a.id ? merging.a : merging.b;
+    const loser  = mergeWinner === merging.a.id ? merging.b : merging.a;
+    setMergeMsg("Merging…");
+    try {
+      // Copy buckets from loser to winner
+      const loserBuckets = (loser.contact_buckets||[]).map(cb=>cb.bucket_id);
+      const winnerBuckets = new Set((winner.contact_buckets||[]).map(cb=>cb.bucket_id));
+      for (const bid of loserBuckets) {
+        if (!winnerBuckets.has(bid)) {
+          await supaFetch("/contact_buckets", { method:"POST", body: JSON.stringify({ contact_id: winner.id, bucket_id: bid }) });
+        }
+      }
+      // Copy tags from loser to winner
+      const loserTags = (loser.contact_tags||[]).map(ct=>ct.tag_id);
+      const winnerTags = new Set((winner.contact_tags||[]).map(ct=>ct.tag_id));
+      for (const tid of loserTags) {
+        if (!winnerTags.has(tid)) {
+          await supaFetch("/contact_tags", { method:"POST", body: JSON.stringify({ contact_id: winner.id, tag_id: tid }) });
+        }
+      }
+      // Merge notes
+      if (loser.notes && loser.notes.trim()) {
+        const combined = [winner.notes, loser.notes].filter(Boolean).join("\n---\n");
+        await supaFetch(`/contacts?id=eq.${winner.id}`, { method:"PATCH", body: JSON.stringify({ notes: combined }) });
+      }
+      // Delete loser
+      await supaFetch(`/contacts?id=eq.${loser.id}`, { method:"DELETE", headers:{Prefer:""} });
+      setMergeMsg("✓ Merged");
+      dismiss(merging);
+      setTimeout(() => { setMerging(null); setMergeMsg(null); onMerge && onMerge(); }, 1000);
+    } catch(e) { setMergeMsg("Error: " + e.message); }
+  };
+
+  const ContactCard = ({ c, winner, onSelect }) => {
+    const name = ((c.first_name||"")+" "+(c.last_name||"")).trim() || "—";
+    const buckets = (c.contact_buckets||[]).map(cb=>cb.buckets?.name).filter(Boolean);
+    const isWinner = winner === c.id;
+    return (
+      <div onClick={onSelect} style={{flex:1,border:`2px solid ${isWinner?C.accent:C.border}`,borderRadius:6,padding:"14px 16px",cursor:"pointer",background:isWinner?"rgba(232,98,42,.04)":"#fff",transition:"all .15s"}}>
+        {onSelect && <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.12em",color:isWinner?C.accent:C.textMuted,marginBottom:6}}>{isWinner?"✓ KEEP THIS":"SELECT TO KEEP"}</div>}
+        <div style={{fontWeight:700,fontSize:15,color:C.text,marginBottom:4}}>{name}</div>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted,marginBottom:3}}>{c.email||"no email"}</div>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted,marginBottom:3}}>{c.cell||c.cell_phone||c.mobile||"no phone"}</div>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.textMuted,marginBottom:3}}>Last activity: {c.last_activity_date||"—"}</div>
+        {buckets.length>0 && <div style={{display:"flex",flexWrap:"wrap",gap:3,marginTop:6}}>{buckets.map(b=><span key={b} className="us-tag" style={{fontSize:9}}>{b}</span>)}</div>}
+        {c.notes && <div style={{marginTop:6,fontSize:11,color:C.textMuted,fontStyle:"italic",overflow:"hidden",maxHeight:36}}>{c.notes.slice(0,80)}{c.notes.length>80?"…":""}</div>}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,.5)",display:"flex",alignItems:"flex-start",justifyContent:"center",zIndex:1000,padding:"24px 16px",overflowY:"auto"}}>
+      <div style={{background:"#fff",border:`1px solid ${C.border}`,borderRadius:8,width:"100%",maxWidth:760,display:"flex",flexDirection:"column"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"18px 24px",borderBottom:`1px solid ${C.border}`}}>
+          <div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.16em",color:C.accent,textTransform:"uppercase",marginBottom:2}}>Contacts</div>
+            <div style={{fontWeight:900,fontSize:20,color:C.text,letterSpacing:"-0.01em"}}>POTENTIAL DUPLICATES</div>
+            <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.textMuted,marginTop:2}}>{visible.length} pair{visible.length!==1?"s":""} flagged</div>
+          </div>
+          <button onClick={onClose} style={{background:"transparent",border:"none",fontSize:20,color:C.textMuted,cursor:"pointer"}}>✕</button>
+        </div>
+        <div style={{padding:"16px 24px",overflowY:"auto",maxHeight:"70vh"}}>
+          {visible.length === 0 && (
+            <div style={{textAlign:"center",padding:"40px 0",fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:C.textMuted}}>No duplicate names found.</div>
+          )}
+          {visible.map(p => {
+            const key = [p.a.id,p.b.id].sort().join("-");
+            const isMerging = merging && [merging.a.id,merging.b.id].sort().join("-") === key;
+            return (
+              <div key={key} style={{marginBottom:16,padding:"16px",border:`1px solid ${C.border}`,borderRadius:6,background:C.surface}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                  <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.textMuted,letterSpacing:"0.1em"}}>SIMILARITY {Math.round(p.score*100)}%</span>
+                  {p.score === 1 && <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,color:C.accent,letterSpacing:"0.1em",border:`1px solid ${C.accent}`,padding:"1px 6px",borderRadius:10}}>EXACT MATCH</span>}
+                </div>
+                <div style={{display:"flex",gap:12,marginBottom:12}}>
+                  <ContactCard c={p.a} winner={isMerging?mergeWinner:null} onSelect={isMerging?()=>setMergeWinner(p.a.id):null}/>
+                  <ContactCard c={p.b} winner={isMerging?mergeWinner:null} onSelect={isMerging?()=>setMergeWinner(p.b.id):null}/>
+                </div>
+                {isMerging ? (
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                    <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.textMuted,flex:1}}>Buckets, tags & notes from discarded contact will be copied to keeper.</div>
+                    {mergeMsg ? <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:mergeMsg.startsWith("✓")?C.green:C.red}}>{mergeMsg}</span> : (
+                      <>
+                        <button className="us-btn" onClick={()=>setMerging(null)} style={{padding:"5px 12px",fontSize:11}}>CANCEL</button>
+                        <button className="us-btn us-save-btn" onClick={confirmMerge} style={{padding:"5px 12px",fontSize:11}}>CONFIRM MERGE →</button>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{display:"flex",gap:8}}>
+                    <button className="us-btn us-save-btn" onClick={()=>startMerge(p)} style={{padding:"5px 12px",fontSize:11}}>⊕ MERGE</button>
+                    <button className="us-btn" onClick={()=>dismiss(p)} style={{padding:"5px 12px",fontSize:11}}>✓ KEEP BOTH</button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+// ── End Duplicate Detection Modal
+
 // ── Contact Detail
 // ── Quick Compose Modal (single contact, no wizard)
 const QuickComposeModal = ({ contact, onClose, onSent }) => {
@@ -1970,6 +2125,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
   const mob = useMobile();
   const [search, setSearch] = useState("");
   const [showImport, setShowImport] = useState(false);
+  const [showDupes, setShowDupes] = useState(false);
   const [importKey, setImportKey] = useState(0);
   const [showColSettings, setShowColSettings] = useState(false);
   const [colOrder, setColOrder] = useState(() => {
@@ -2211,6 +2367,9 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
 
   return (
     <div style={{padding:mob?"16px 12px":"32px 24px"}}>
+      {showDupes && (
+        <DuplicatesModal contacts={contacts} onClose={()=>setShowDupes(false)} onMerge={()=>{ setShowDupes(false); window.__bulkRefresh&&window.__bulkRefresh(); }}/>
+      )}
       {showImport && (
         <CsvImportModal
           key={importKey}
@@ -2402,6 +2561,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
                 </div>
               )}
             </div>
+            <button className="us-btn" onClick={() => setShowDupes(true)} style={{whiteSpace:"nowrap"}}>⊕ FIND DUPES</button>
             <button className="us-btn" onClick={() => setShowImport(true)} style={{whiteSpace:"nowrap"}}>⬆ IMPORT CSV</button>
             <button className="us-btn" onClick={() => exportCSV(filtered)} style={{whiteSpace:"nowrap"}}>⬇ EXPORT CSV</button>
             <button className="us-btn us-edit-contact-btn" onClick={onNew} style={{whiteSpace:"nowrap"}}>+ NEW CONTACT</button>
