@@ -3069,46 +3069,35 @@ const BulkGmailSync = ({ allContacts }) => {
   const { connected } = React.useContext(GmailContext);
   const [syncing, setSyncing] = useState(false);
   const [results, setResults] = useState(null);
-  const [progress, setProgress] = useState({ done: 0, total: 0, current: "" });
-  const cancelRef = useRef(false);
-
-  const withEmail = (allContacts||[]).filter(c => c.email);
+  const [error, setError] = useState(null);
 
   const runBulkSync = async () => {
     if (!connected) { alert("Connect Gmail first."); return; }
-    if (!confirm(`Sync Gmail history for all ${withEmail.length} contacts with email addresses? This may take several minutes.`)) return;
+    if (!confirm("Run Gmail sync now? Only scored, recently active, and previously emailed contacts will be processed. This runs server-side and completes in under 5 minutes.")) return;
     setSyncing(true);
-    cancelRef.current = false;
     setResults(null);
-    setProgress({ done: 0, total: withEmail.length, current: "" });
-    let synced = 0, skipped = 0, failed = 0;
-    for (let i = 0; i < withEmail.length; i++) {
-      if (cancelRef.current) break;
-      const c = withEmail[i];
-      const name = `${c.first_name||""} ${c.last_name||""}`.trim() || c.email;
-      setProgress({ done: i, total: withEmail.length, current: name });
-      try {
-        const threads = await gmailSyncContact(c.id, c.email);
-        if (threads.length > 0) synced++;
-        else skipped++;
-      } catch(e) {
-        console.warn("Sync failed for", c.email, e.message);
-        failed++;
-      }
-      await new Promise(r => setTimeout(r, 200));
+    setError(null);
+    try {
+      const res = await fetch("/api/gmail-sync", {
+        method: "POST",
+        headers: { Authorization: `Bearer urbansv_sync_2026` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Sync failed");
+      setResults(data);
+    } catch(e) {
+      setError(e.message);
+    } finally {
+      setSyncing(false);
     }
-    setSyncing(false);
-    setResults({ synced, skipped, failed, total: withEmail.length });
-    setProgress(p => ({ ...p, done: withEmail.length, current: "" }));
   };
-
-  const pct = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
 
   return (
     <div>
       <div style={{marginBottom:16,fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted,lineHeight:1.8}}>
-        Pull Gmail thread history for every contact with an email into the conversations database.
-        Required for AI scoring to have engagement data to work from.
+        Pull Gmail thread history into the conversations database. Only syncs scored contacts,
+        contacts active in the last 180 days, and contacts with prior email history.
+        Runs server-side — completes in under 5 minutes.
       </div>
       {!connected && (
         <div style={{background:"rgba(204,34,34,.07)",border:`1px solid rgba(204,34,34,.25)`,borderRadius:4,padding:"12px 16px",fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.red,marginBottom:16}}>
@@ -3118,35 +3107,30 @@ const BulkGmailSync = ({ allContacts }) => {
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,flexWrap:"wrap"}}>
         <button className="us-btn us-save-btn" onClick={runBulkSync} disabled={syncing||!connected}
           style={{padding:"10px 24px",fontSize:13}}>
-          {syncing ? "⏳ SYNCING…" : `↓ SYNC ALL ${withEmail.length} CONTACTS`}
+          {syncing ? <><div className="us-spinner" style={{width:11,height:11,borderWidth:1.5,display:"inline-block",marginRight:6}}/>SYNCING…</> : "↓ RUN GMAIL SYNC"}
         </button>
         {syncing && (
-          <button className="us-btn us-delete-btn" onClick={()=>{cancelRef.current=true;}} style={{padding:"8px 16px",fontSize:12}}>
-            ✕ CANCEL
-          </button>
+          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textMuted}}>
+            Running server-side — this may take up to 5 minutes…
+          </span>
         )}
       </div>
-      {syncing && (
-        <div style={{marginBottom:20}}>
-          <div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}>
-            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.textSub,overflow:"hidden",textOverflow:"ellipsis",maxWidth:"80%"}}>
-              {progress.current ? progress.current : "Starting…"}
-            </span>
-            <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,fontWeight:700,color:C.accent}}>{pct}%</span>
-          </div>
-          <div style={{height:6,background:C.border,borderRadius:3,overflow:"hidden"}}>
-            <div style={{height:"100%",width:`${pct}%`,background:C.accent,borderRadius:3,transition:"width .3s"}}/>
-          </div>
-          <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.textMuted,marginTop:6}}>
-            {progress.done} / {progress.total} contacts processed
-          </div>
+      {error && (
+        <div style={{background:"rgba(204,34,34,.07)",border:`1px solid rgba(204,34,34,.25)`,borderRadius:4,padding:"12px 16px",fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:C.red}}>
+          ✕ {error}
         </div>
       )}
       {results && (
         <div style={{background:C.elevated,border:`1px solid ${C.border}`,borderRadius:4,padding:"16px 20px"}}>
           <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.16em",textTransform:"uppercase",color:C.accent,marginBottom:10}}>Sync Complete</div>
-          <div style={{display:"flex",gap:24}}>
-            {[{l:"With threads",v:results.synced,c:C.green},{l:"No history",v:results.skipped,c:C.textMuted},{l:"Errors",v:results.failed,c:C.red}].map(({l,v,c})=>(
+          <div style={{display:"flex",gap:24,flexWrap:"wrap"}}>
+            {[
+              {l:"Eligible",v:results.total,c:C.textSub},
+              {l:"Processed",v:results.processed,c:C.text},
+              {l:"With threads",v:results.synced,c:C.green},
+              {l:"Errors",v:results.errors,c:results.errors>0?C.red:C.textMuted},
+              {l:"Elapsed",v:`${results.elapsed_seconds}s`,c:C.textMuted},
+            ].map(({l,v,c})=>(
               <div key={l}>
                 <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:22,fontWeight:900,color:c}}>{v}</div>
                 <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:10,color:C.textMuted,letterSpacing:"0.08em",textTransform:"uppercase"}}>{l}</div>
@@ -3158,7 +3142,6 @@ const BulkGmailSync = ({ allContacts }) => {
     </div>
   );
 };
-
 // ── Settings Page
 // ── SCORING SETTINGS ─────────────────────────────────────────────────────────
 const ScoringSettings = () => {
