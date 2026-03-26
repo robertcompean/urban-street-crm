@@ -1026,18 +1026,30 @@ const ConversationsSection = ({ contactId, contactEmail, onContactUpdate }) => {
 
 // ── Duplicate Detection Modal
 const fuzzyScore = (a, b) => {
-  const norm = s => s.toLowerCase().replace(/[^a-z0-9 ]/g,"").trim();
-  const tokens = s => norm(s).split(/\s+/).sort().join(" ");
-  const ta = tokens(a), tb = tokens(b);
-  if (ta === tb) return 1.0;
-  const longer = ta.length > tb.length ? ta : tb;
-  const shorter = ta.length > tb.length ? tb : ta;
-  if (longer.length === 0) return 1.0;
-  let matches = 0;
-  for (let i = 0; i < shorter.length; i++) {
-    if (longer.includes(shorter[i])) matches++;
-  }
-  return matches / longer.length;
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g,"").trim();
+  const editDist = (s1, s2) => {
+    const m = s1.length, n = s2.length;
+    const dp = Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i||j));
+    for (let i=1;i<=m;i++) for (let j=1;j<=n;j++)
+      dp[i][j] = s1[i-1]===s2[j-1] ? dp[i-1][j-1] : 1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+    return dp[m][n];
+  };
+  const sim = (s1, s2) => {
+    const a = norm(s1), b = norm(s2);
+    if (!a || !b) return 0;
+    if (a === b) return 1.0;
+    const maxLen = Math.max(a.length, b.length);
+    return 1 - editDist(a, b) / maxLen;
+  };
+  // Require both first and last name to be similar
+  const partsA = a.trim().split(/\s+/), partsB = b.trim().split(/\s+/);
+  const firstA = partsA[0]||"", lastA = partsA.slice(1).join(" ")||"";
+  const firstB = partsB[0]||"", lastB = partsB.slice(1).join(" ")||"";
+  if (!lastA || !lastB) return sim(a, b) >= 0.9 ? sim(a,b) : 0;
+  const lastSim = sim(lastA, lastB);
+  const firstSim = sim(firstA, firstB);
+  if (lastSim < 0.7) return 0; // last names must be similar
+  return (lastSim * 0.6 + firstSim * 0.4);
 };
 
 const findDuplicatePairs = (contacts) => {
@@ -1094,7 +1106,7 @@ const DuplicatesModal = ({ contacts, onClose, onMerge }) => {
           }
         }
       });
-      setPairs(pairs.sort((x,y) => y.score - x.score));
+      setPairs(pairs.sort((x,y) => y.score - x.score).slice(0, 300));
       setScanning(false);
     }, 50);
   }, []);
