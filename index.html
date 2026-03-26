@@ -2421,7 +2421,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
   return (
     <div style={{padding:mob?"16px 12px":"32px 24px"}}>
       {showDupes && (
-        <DuplicatesModal contacts={contacts} onClose={()=>{ setShowDupes(false); window.__bulkRefresh&&window.__bulkRefresh(); }} onMerge={()=>{ window.__bulkRefresh&&window.__bulkRefresh(); }}/>
+        <DuplicatesModal contacts={contacts} onClose={()=>{ setShowDupes(false); window.__bulkRefresh&&window.__bulkRefresh(); }} onMerge={()=>{}}/>
       )}
       {showImport && (
         <CsvImportModal
