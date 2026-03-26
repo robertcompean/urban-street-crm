@@ -1061,7 +1061,43 @@ const findDuplicatePairs = (contacts) => {
 };
 
 const DuplicatesModal = ({ contacts, onClose, onMerge }) => {
-  const [pairs, setPairs] = React.useState(() => findDuplicatePairs(contacts));
+  const [pairs, setPairs] = React.useState([]);
+  const [scanning, setScanning] = React.useState(true);
+  React.useEffect(() => {
+    setTimeout(() => {
+      // Only compare contacts that share at least one token in their name to reduce comparisons
+      const norm = s => s.toLowerCase().replace(/[^a-z0-9 ]/g,"").trim();
+      const bucket = {};
+      contacts.forEach(c => {
+        const name = ((c.first_name||"")+" "+(c.last_name||"")).trim();
+        if (!name) return;
+        const tokens = norm(name).split(/\s+/);
+        tokens.forEach(t => {
+          if (t.length < 2) return;
+          if (!bucket[t]) bucket[t] = [];
+          bucket[t].push(c);
+        });
+      });
+      const seen = new Set();
+      const pairs = [];
+      Object.values(bucket).forEach(group => {
+        for (let i = 0; i < group.length; i++) {
+          for (let j = i+1; j < group.length; j++) {
+            const a = group[i], b = group[j];
+            const key = [a.id,b.id].sort().join("-");
+            if (seen.has(key)) continue;
+            seen.add(key);
+            const nameA = ((a.first_name||"")+" "+(a.last_name||"")).trim();
+            const nameB = ((b.first_name||"")+" "+(b.last_name||"")).trim();
+            const score = fuzzyScore(nameA, nameB);
+            if (score >= 0.8) pairs.push({ a, b, score, nameA, nameB });
+          }
+        }
+      });
+      setPairs(pairs.sort((x,y) => y.score - x.score));
+      setScanning(false);
+    }, 50);
+  }, []);
   const [dismissed, setDismissed] = React.useState(new Set());
   const [merging, setMerging] = React.useState(null);
   const [mergeWinner, setMergeWinner] = React.useState(null);
@@ -1136,7 +1172,12 @@ const DuplicatesModal = ({ contacts, onClose, onMerge }) => {
           <button onClick={onClose} style={{background:"transparent",border:"none",fontSize:20,color:C.textMuted,cursor:"pointer"}}>✕</button>
         </div>
         <div style={{padding:"16px 24px",overflowY:"auto",maxHeight:"70vh"}}>
-          {visible.length === 0 && (
+          {scanning && (
+            <div style={{textAlign:"center",padding:"40px 0",fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:C.textMuted,display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
+              <div className="us-spinner" style={{width:14,height:14,borderWidth:1.5}}/>SCANNING {contacts.length} CONTACTS…
+            </div>
+          )}
+          {!scanning && visible.length === 0 && (
             <div style={{textAlign:"center",padding:"40px 0",fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:C.textMuted}}>No duplicate names found.</div>
           )}
           {visible.map(p => {
