@@ -807,7 +807,7 @@ const GmailStatusBar = () => {
 };
 
 // ── Conversations Section
-const ConversationsSection = ({ contactId, contactEmail, onContactUpdate }) => {
+const ConversationsSection = ({ contactId, contactEmail, contact, onContactUpdate }) => {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -1004,7 +1004,16 @@ const ConversationsSection = ({ contactId, contactEmail, onContactUpdate }) => {
                                     </div>
                                   </div>
                                 ) : (
-                                  <button className="us-btn" onClick={()=>{setReplyingTo(conv.id);setReplyBody("");}} style={{fontSize:11,padding:"5px 12px"}}>↩ REPLY</button>
+                                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                                    <button className="us-btn" onClick={()=>{setReplyingTo(conv.id);setReplyBody("");}} style={{fontSize:11,padding:"5px 12px"}}>↩ REPLY</button>
+                                    {contact?.ai_score >= 35 && contact?.last_email_direction === "inbound" && (
+                                      <span
+                                        title="Dismiss — no reply needed"
+                                        onClick={async e=>{ e.stopPropagation(); await supaFetch(`/contacts?id=eq.${contactId}`,{method:"PATCH",body:JSON.stringify({last_email_direction:"outbound"})}); onContactUpdate?.({...contact, last_email_direction:"outbound"}); }}
+                                        style={{width:8,height:8,borderRadius:"50%",background:"#e8622a",flexShrink:0,boxShadow:"0 0 0 2px rgba(232,98,42,0.25)",cursor:"pointer",display:"inline-block"}}
+                                      />
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             )}
@@ -1619,7 +1628,7 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
 
           <div style={{marginBottom:24}}>
             <div className="us-section-label" style={{marginBottom:12}}>Conversations</div>
-            <ConversationsSection contactId={contact.id} contactEmail={contact.email} onContactUpdate={onSave}/>
+            <ConversationsSection contactId={contact.id} contactEmail={contact.email} contact={contact} onContactUpdate={onSave}/>
           </div>
 
           {(contact.created_at||contact.updated_at) && (
@@ -2174,7 +2183,7 @@ const exportCSV = (contacts) => {
   URL.revokeObjectURL(url);
 };
 
-const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
+const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend, onUpdate }) => {
   const mob = useMobile();
   const [search, setSearch] = useState("");
   const [showImport, setShowImport] = useState(false);
@@ -2395,7 +2404,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend }) => {
       : s || null;
     const color = subColor(subStatus);
     switch(key) {
-      case "name": { const hasInbound = c.ai_score != null && parseInt(c.ai_score) >= 35 && c.last_email_direction === "inbound"; return <td key={key} style={{fontWeight:700,fontSize:15,color:C.text}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}><div style={{display:"flex",alignItems:"center",gap:6}}>{hasInbound && <span title="Unread inbound email" style={{width:8,height:8,borderRadius:"50%",background:"#e8622a",flexShrink:0,boxShadow:"0 0 0 2px rgba(232,98,42,0.25)"}}/>}<span>{name}</span></div>{mob && c.ai_score!=null && <AiScoreBadge score={c.ai_score} size="sm"/>}</div></td>; }
+      case "name": { const hasInbound = c.ai_score != null && parseInt(c.ai_score) >= 35 && c.last_email_direction === "inbound"; return <td key={key} style={{fontWeight:700,fontSize:15,color:C.text}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}><div style={{display:"flex",alignItems:"center",gap:6}}>{hasInbound && <span title="Dismiss — click to mark as replied" onClick={async e=>{ e.stopPropagation(); await supaFetch(`/contacts?id=eq.${c.id}`,{method:"PATCH",body:JSON.stringify({last_email_direction:"outbound"})}); onUpdate && onUpdate({...c, last_email_direction:"outbound"}); }} style={{width:8,height:8,borderRadius:"50%",background:"#e8622a",flexShrink:0,boxShadow:"0 0 0 2px rgba(232,98,42,0.25)",cursor:"pointer"}}/>}<span>{name}</span></div>{mob && c.ai_score!=null && <AiScoreBadge score={c.ai_score} size="sm"/>}</div></td>; }
       case "ai_score": return <td key={key}>{c.ai_score !== null && c.ai_score !== undefined ? <AiScoreBadge score={c.ai_score} size="sm"/> : <span style={{color:C.textMuted}}>—</span>}</td>;
       case "email": return <td key={key} className="us-mono" style={{fontSize:13,color:C.textSub}}>{c.email||"—"}</td>;
       case "cell": return <td key={key} className="us-mono" style={{fontSize:13,color:C.text}}>{fmt.phone(c.cell||c.mobile||c.cell_phone)}</td>;
@@ -5084,7 +5093,7 @@ function App() {
                 ? <NewContactForm onBack={()=>setCreatingNew(false)} onCreated={handleCreated}/>
                 : selected
                   ? <ContactDetail contact={selected} onBack={()=>setSelected(null)} onSave={handleSave} onDelete={handleDelete} onSendEmail={handleBulkSendFromTable}/>
-                  : <ContactsTable contacts={contacts} onSelect={setSelected} onNew={()=>setCreatingNew(true)} onBulkSend={handleBulkSendFromTable}/>
+                  : <ContactsTable contacts={contacts} onSelect={setSelected} onNew={()=>setCreatingNew(true)} onBulkSend={handleBulkSendFromTable} onUpdate={handleSave}/>
       }
     </div>
   );
