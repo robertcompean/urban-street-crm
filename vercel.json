@@ -11,8 +11,7 @@
     { "source": "/api/calculate-scores", "destination": "/api/calculate-scores.js" }
   ],
   "crons": [
-    { "path": "/api/gmail-sync",       "schedule": "0 16 * * *" },
-    { "path": "/api/gmail-sync",       "schedule": "0 22 * * *" },
+    { "path": "/api/gmail-sync",       "schedule": "0 */2 * * *" },
     { "path": "/api/gmail-scheduler",  "schedule": "0 17 * * *" },
     { "path": "/api/calculate-scores", "schedule": "0 23 * * *" }
   ]
