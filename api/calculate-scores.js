@@ -1,5 +1,5 @@
 const SUPABASE_URL = "https://kdxbkwcvrihcxqhukjee.supabase.co";
-const SUPABASE_KEY = "sb_publishable_9whlg1wqquwmjgivsavs0A_H7HpbgE9";
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
 const sb = async (path, options = {}) => {
   const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
@@ -23,12 +23,16 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    // 1. Load enabled rules
-    const rules = await sb("/scoring_rules?enabled=eq.true");
+    // 1. Load rules, investor buckets, and first contact page in parallel
+    const [rules, investorBuckets, firstContactBatch] = await Promise.all([
+      sb("/scoring_rules?enabled=eq.true"),
+      sb("/buckets?name=ilike.%25investor%25&select=id"),
+      sb(`/contacts?select=id,cs_done_deal,cs_responsiveness,cs_incoming_ads&limit=1000&offset=0`),
+    ]);
+
     if (!rules?.length) return res.status(200).json({ success: true, processed: 0 });
 
-    // 2. Get investor contact IDs (filter in memory)
-    const investorBuckets = await sb("/buckets?name=ilike.%25investor%25&select=id");
+    // 2. Resolve investor contact IDs
     const investorContactIds = new Set();
     if (investorBuckets?.length) {
       const bucketIds = investorBuckets.map(b => b.id).join(",");
@@ -36,22 +40,23 @@ export default async function handler(req, res) {
       (invRows || []).forEach(r => investorContactIds.add(r.contact_id));
     }
 
-    // 3. Load all contacts
-    const PAGE = 1000;
-    let allContacts = [];
-    let offset = 0;
-    while (true) {
-      const batch = await sb(`/contacts?select=id,cs_done_deal,cs_responsiveness,cs_incoming_ads&limit=${PAGE}&offset=${offset}`);
-      if (!batch?.length) break;
-      allContacts = allContacts.concat(batch);
-      if (batch.length < PAGE) break;
-      offset += PAGE;
+    // 3. Load remaining contacts (first batch already fetched above)
+    let allContacts = firstContactBatch || [];
+    if (allContacts.length === 1000) {
+      let offset = 1000;
+      while (true) {
+        const batch = await sb(`/contacts?select=id,cs_done_deal,cs_responsiveness,cs_incoming_ads&limit=1000&offset=${offset}`);
+        if (!batch?.length) break;
+        allContacts = allContacts.concat(batch);
+        if (batch.length < 1000) break;
+        offset += 1000;
+      }
     }
 
     // Filter out investors
     allContacts = allContacts.filter(c => !investorContactIds.has(c.id));
 
-    // 4. Load recent conversations (all at once)
+    // 4. Load recent conversations
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const actMap = {};
     let convOffset = 0;
