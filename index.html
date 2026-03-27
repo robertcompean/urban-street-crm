@@ -103,6 +103,7 @@
   /* FAB */
   .us-fab{position:fixed;bottom:24px;right:24px;width:52px;height:52px;border-radius:50%;background:#e8622a;color:#fff;font-size:26px;font-weight:300;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(232,98,42,.4);z-index:50;line-height:1}
   .us-fab:hover{background:#c8501a}
+  @media(max-width:640px){.us-pagination{padding-bottom:88px!important}}
 </style>
 </head>
 <body>
@@ -1006,7 +1007,7 @@ const ConversationsSection = ({ contactId, contactEmail, contact, onContactUpdat
                                 ) : (
                                   <div style={{display:"flex",alignItems:"center",gap:8}}>
                                     <button className="us-btn" onClick={()=>{setReplyingTo(conv.id);setReplyBody("");}} style={{fontSize:11,padding:"5px 12px"}}>↩ REPLY</button>
-                                    {contact?.ai_score >= 35 && contact?.last_email_direction === "inbound" && (
+                                    {contact?.last_email_direction === "inbound" && (
                                       <span
                                         title="Dismiss — no reply needed"
                                         onClick={async e=>{ e.stopPropagation(); await supaFetch(`/contacts?id=eq.${contactId}`,{method:"PATCH",body:JSON.stringify({last_email_direction:"outbound"})}); onContactUpdate?.({...contact, last_email_direction:"outbound"}); }}
@@ -2404,7 +2405,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend, onUpdate }) => {
       : s || null;
     const color = subColor(subStatus);
     switch(key) {
-      case "name": { const hasInbound = c.ai_score != null && parseInt(c.ai_score) >= 35 && c.last_email_direction === "inbound"; return <td key={key} style={{fontWeight:700,fontSize:15,color:C.text}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}><div style={{display:"flex",alignItems:"center",gap:6}}>{hasInbound && <span title="Dismiss — click to mark as replied" onClick={async e=>{ e.stopPropagation(); await supaFetch(`/contacts?id=eq.${c.id}`,{method:"PATCH",body:JSON.stringify({last_email_direction:"outbound"})}); onUpdate && onUpdate({...c, last_email_direction:"outbound"}); }} style={{width:8,height:8,borderRadius:"50%",background:"#e8622a",flexShrink:0,boxShadow:"0 0 0 2px rgba(232,98,42,0.25)",cursor:"pointer"}}/>}<span>{name}</span></div>{mob && c.ai_score!=null && <AiScoreBadge score={c.ai_score} size="sm"/>}</div></td>; }
+      case "name": { const hasInbound = c.last_email_direction === "inbound"; return <td key={key} style={{fontWeight:700,fontSize:15,color:C.text}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}><div style={{display:"flex",alignItems:"center",gap:6}}>{hasInbound && <span title="Dismiss — click to mark as replied" onClick={async e=>{ e.stopPropagation(); await supaFetch(`/contacts?id=eq.${c.id}`,{method:"PATCH",body:JSON.stringify({last_email_direction:"outbound"})}); onUpdate && onUpdate({...c, last_email_direction:"outbound"}); }} style={{width:8,height:8,borderRadius:"50%",background:"#e8622a",flexShrink:0,boxShadow:"0 0 0 2px rgba(232,98,42,0.25)",cursor:"pointer"}}/>}<span>{name}</span></div>{mob && c.ai_score!=null && <AiScoreBadge score={c.ai_score} size="sm"/>}</div></td>; }
       case "ai_score": return <td key={key}>{c.ai_score !== null && c.ai_score !== undefined ? <AiScoreBadge score={c.ai_score} size="sm"/> : <span style={{color:C.textMuted}}>—</span>}</td>;
       case "email": return <td key={key} className="us-mono" style={{fontSize:13,color:C.textSub}}>{c.email||"—"}</td>;
       case "cell": return <td key={key} className="us-mono" style={{fontSize:13,color:C.text}}>{fmt.phone(c.cell||c.mobile||c.cell_phone)}</td>;
@@ -2731,7 +2732,7 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend, onUpdate }) => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,padding:"16px 0",borderTop:`1px solid ${C.border}`}}>
+        <div className="us-pagination" style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,padding:"16px 0",borderTop:`1px solid ${C.border}`}}>
           <button className="us-btn" onClick={()=>setPage(0)} disabled={page===0} style={{padding:"6px 12px",fontSize:16,color:"#444",borderColor:"#aaa"}}>«</button>
           <button className="us-btn" onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} style={{padding:"6px 12px",fontSize:16,color:"#444",borderColor:"#aaa"}}>‹ PREV</button>
           <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:"#333",fontWeight:500}}>
