@@ -16,7 +16,7 @@
   ::-webkit-scrollbar-track{background:#f4f4f5}
   ::-webkit-scrollbar-thumb{background:#d0d0d5;border-radius:3px}
   ::-webkit-scrollbar-thumb:hover{background:#b0b0b8}
-  .us-table-wrap{width:100%;overflow:auto;max-height:calc(100vh - 215px)}
+  .us-table-wrap{width:100%;overflow:auto;max-height:calc(100vh - 180px)}
   .us-table{width:100%;border-collapse:collapse;font-size:15px}
   .us-table thead th{background:#ffffff;color:#888;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;padding:10px 12px;text-align:left;border-bottom:1px solid #e2e2e5;white-space:nowrap;position:sticky;top:0;z-index:2}
   .us-table tbody tr{border-bottom:1px solid #e2e2e5;cursor:pointer;transition:background .1s}
@@ -2731,14 +2731,14 @@ const ContactsTable = ({ contacts, onSelect, onNew, onBulkSend, onUpdate }) => {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:12,padding:"16px 0",borderTop:`1px solid ${C.border}`}}>
-          <button className="us-btn" onClick={()=>setPage(0)} disabled={page===0} style={{padding:"6px 12px",fontSize:16,color:"#444",borderColor:"#aaa"}}>«</button>
-          <button className="us-btn" onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} style={{padding:"6px 12px",fontSize:16,color:"#444",borderColor:"#aaa"}}>‹ PREV</button>
-          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:12,color:"#333",fontWeight:500}}>
-            Page {page+1} of {totalPages} · {filtered.length} contacts
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"12px 0 20px",borderTop:`1px solid ${C.border}`,paddingRight:mob?"72px":0}}>
+          <button className="us-btn" onClick={()=>setPage(0)} disabled={page===0} style={{padding:"5px 8px",fontSize:12,color:"#444",borderColor:"#ccc"}}>«</button>
+          <button className="us-btn" onClick={()=>setPage(p=>Math.max(0,p-1))} disabled={page===0} style={{padding:"5px 10px",fontSize:12,color:"#444",borderColor:"#ccc"}}>‹ PREV</button>
+          <span style={{fontFamily:"'JetBrains Mono',monospace",fontSize:11,color:"#666",fontWeight:500,whiteSpace:"nowrap"}}>
+            {page+1} / {totalPages}
           </span>
-          <button className="us-btn" onClick={()=>setPage(p=>Math.min(totalPages-1,p+1))} disabled={page===totalPages-1} style={{padding:"6px 12px",fontSize:16,color:"#444",borderColor:"#aaa"}}>NEXT ›</button>
-          <button className="us-btn" onClick={()=>setPage(totalPages-1)} disabled={page===totalPages-1} style={{padding:"6px 12px",fontSize:16,color:"#444",borderColor:"#aaa"}}>»</button>
+          <button className="us-btn" onClick={()=>setPage(p=>Math.min(totalPages-1,p+1))} disabled={page===totalPages-1} style={{padding:"5px 10px",fontSize:12,color:"#444",borderColor:"#ccc"}}>NEXT ›</button>
+          <button className="us-btn" onClick={()=>setPage(totalPages-1)} disabled={page===totalPages-1} style={{padding:"5px 8px",fontSize:12,color:"#444",borderColor:"#ccc"}}>»</button>
         </div>
       )}
       {bulkAction==='tag' && (
