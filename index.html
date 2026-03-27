@@ -1392,7 +1392,35 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
         }
       }
       const data = await supaFetch(`/contacts?id=eq.${contact.id}&select=*,contact_tags(tag_id,tags(id,name)),contact_buckets(bucket_id,buckets(id,name))`);
-      const updated = (data && data[0]) ? data[0] : {...contact,...form};
+      let updated = (data && data[0]) ? data[0] : {...contact,...form};
+      // Recalculate score immediately based on saved fields
+      try {
+        const rules = await supaFetch("/scoring_rules?enabled=eq.true");
+        const convs = await supaFetch(`/conversations?contact_id=eq.${contact.id}&select=last_direction&limit=50`);
+        const thirtyDaysAgo = new Date(Date.now() - 30*24*60*60*1000).toISOString();
+        const recentConvs = await supaFetch(`/conversations?contact_id=eq.${contact.id}&last_message_at=gte.${thirtyDaysAgo}&select=last_direction`);
+        const hasSent = (recentConvs||[]).some(c=>c.last_direction==="outbound");
+        const hasReceived = (recentConvs||[]).some(c=>c.last_direction==="inbound");
+        const hasActivity = (recentConvs||[]).length > 0;
+        const done_deal = (updated.cs_done_deal||"").toLowerCase().trim();
+        const responsiveness = (updated.cs_responsiveness||"").toLowerCase().trim();
+        const incoming_ads = (updated.cs_incoming_ads||"").toLowerCase().trim();
+        let score = 0;
+        for (const rule of (rules||[])) {
+          switch(rule.signal_key) {
+            case "cs_done_deal_yes": if(["yes","1+","done 1+","done","true","1"].includes(done_deal)) score+=rule.points; break;
+            case "cs_done_deal_attempted": if(["attempted","in progress","pending"].includes(done_deal)) score+=rule.points; break;
+            case "cs_responsiveness_good": if(["responsive","yes","true","1"].includes(responsiveness)) score+=rule.points; break;
+            case "cs_responsiveness_bad": if(["unresponsive","no","false","0"].includes(responsiveness)) score+=rule.points; break;
+            case "recent_activity": if(hasActivity) score+=rule.points; break;
+            case "email_thread": if(hasSent&&hasReceived) score+=rule.points; break;
+            case "cs_incoming_ads": if(incoming_ads&&!["","no","false","0","none"].includes(incoming_ads)) score+=rule.points; break;
+          }
+        }
+        score = Math.max(0, Math.min(100, score));
+        await supaFetch(`/contacts?id=eq.${contact.id}`, { method:"PATCH", body:JSON.stringify({ai_score:score}) });
+        updated = {...updated, ai_score:score};
+      } catch(e) { console.warn("Score recalc failed:", e.message); }
       onSave?.(updated);
       setEditing(false);
       setToast(true);
