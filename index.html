@@ -888,7 +888,7 @@ const ConversationsSection = ({ contactId, contactEmail, contact, onContactUpdat
       onContactUpdate?.({...contact, last_email_direction:"outbound"});
       setReplyBody(""); setReplyingTo(null);
       setMessages({});
-      await new Promise(r=>setTimeout(r,4000));
+      await new Promise(r=>setTimeout(r,6000));
       await gmailSyncContact(contactId, contactEmail);
       await loadConvs();
       const refreshed = await supaFetch(`/contacts?id=eq.${contactId}&select=*,contact_tags(tag_id,tags(id,name)),contact_buckets(bucket_id,buckets(id,name))`);
@@ -1477,7 +1477,7 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
             <QuickComposeModal
               contact={contact}
               onClose={()=>setShowCompose(false)}
-              onSent={async ()=>{ setShowCompose(false); await new Promise(r=>setTimeout(r,4000)); await gmailSyncContact(contact.id, contact.email); const refreshed = await supaFetch(`/contacts?id=eq.${contact.id}&select=*,contact_tags(tag_id,tags(id,name)),contact_buckets(bucket_id,buckets(id,name))`); if (refreshed?.[0]) onSave?.(refreshed[0]); }}
+              onSent={async ()=>{ setShowCompose(false); await new Promise(r=>setTimeout(r,6000)); await gmailSyncContact(contact.id, contact.email); const refreshed = await supaFetch(`/contacts?id=eq.${contact.id}&select=*,contact_tags(tag_id,tags(id,name)),contact_buckets(bucket_id,buckets(id,name))`); if (refreshed?.[0]) onSave?.(refreshed[0]); }}
             />
           )}
           {!editing && (
