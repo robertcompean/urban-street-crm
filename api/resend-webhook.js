@@ -24,15 +24,13 @@ export default async function handler(req, res) {
     const event = req.body;
     const type = event?.type;
 
-    // Only process hard bounces
     if (type !== "email.bounced") {
       return res.status(200).json({ received: true, action: "ignored" });
     }
 
     const email = event?.data?.to?.[0] || event?.data?.email_id;
-    const bounceType = event?.data?.bounce?.type; // "hard" or "soft"
+    const bounceType = event?.data?.bounce?.type;
 
-    // Ignore soft bounces
     if (bounceType !== "hard") {
       return res.status(200).json({ received: true, action: "soft_bounce_ignored" });
     }
@@ -41,7 +39,6 @@ export default async function handler(req, res) {
       return res.status(200).json({ received: true, action: "no_email_found" });
     }
 
-    // Find contact by email
     const contacts = await sb(`/contacts?email=ilike.${encodeURIComponent(email)}&select=id,email`);
     if (!contacts?.length) {
       console.log(`Hard bounce for unknown email: ${email}`);
@@ -50,21 +47,19 @@ export default async function handler(req, res) {
 
     const contactId = contacts[0].id;
 
-    // Mark as invalid and unsubscribed
     await sb(`/contacts?id=eq.${contactId}`, {
       method: "PATCH",
       body: JSON.stringify({
-        email_status: "Invalid",
+        email_status: "bounced",
         subscription_status: "Unsubscribed",
       }),
     });
 
-    console.log(`Hard bounce processed: ${email} (id: ${contactId}) marked Invalid + Unsubscribed`);
-    return res.status(200).json({ received: true, action: "marked_invalid", contactId });
+    console.log(`Hard bounce: ${email} (id: ${contactId}) marked bounced + Unsubscribed`);
+    return res.status(200).json({ received: true, action: "marked_bounced", contactId });
 
   } catch (err) {
     console.error("Resend webhook error:", err.message);
-    // Always return 200 to Resend so it doesn't retry
     return res.status(200).json({ received: true, error: err.message });
   }
 }
