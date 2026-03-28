@@ -883,6 +883,9 @@ const ConversationsSection = ({ contactId, contactEmail, contact, onContactUpdat
         sigHtml,
         threadId: conv.gmail_thread_id,
       });
+      // Immediately clear orange dot
+      await supaFetch(`/contacts?id=eq.${contactId}`, { method:"PATCH", body:JSON.stringify({last_email_direction:"outbound"}) });
+      onContactUpdate?.({...contact, last_email_direction:"outbound"});
       setReplyBody(""); setReplyingTo(null);
       setMessages({});
       await new Promise(r=>setTimeout(r,4000));
@@ -4996,6 +4999,60 @@ const ScheduledSendsPage = () => {
   );
 };
 
+
+const PIN_CODE = "1121";
+function PinScreen({ onUnlock }) {
+  const [digits, setDigits] = React.useState([]);
+  const [shake, setShake] = React.useState(false);
+  const entered = digits.join("");
+  const handleDigit = (d) => {
+    const next = [...digits, d];
+    if (next.length === 4) {
+      if (next.join("") === PIN_CODE) {
+        sessionStorage.setItem("crm_unlocked","1");
+        onUnlock();
+      } else {
+        setShake(true);
+        setTimeout(() => { setShake(false); setDigits([]); }, 600);
+      }
+    } else {
+      setDigits(next);
+    }
+  };
+  const handleDel = () => setDigits(d => d.slice(0,-1));
+  const C2 = {bg:"#f4f4f5",surface:"#fff",accent:"#e8622a",border:"#e2e2e5",text:"#111"};
+  return (
+    <div style={{minHeight:"100vh",background:C2.bg,display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{background:C2.surface,border:`1px solid ${C2.border}`,borderRadius:6,padding:"40px 36px",width:280,textAlign:"center",boxShadow:"0 4px 24px rgba(0,0,0,0.08)"}}>
+        <div style={{fontFamily:"'JetBrains Mono',monospace",fontSize:9,letterSpacing:"0.2em",color:C2.accent,textTransform:"uppercase",marginBottom:8}}>Urban Street / CRM</div>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:900,fontSize:28,letterSpacing:"-0.02em",marginBottom:28}}>ENTER PIN</div>
+        <div style={{display:"flex",justifyContent:"center",gap:12,marginBottom:28,animation:shake?"shake 0.5s":"none"}}>
+          {[0,1,2,3].map(i=>(
+            <div key={i} style={{width:14,height:14,borderRadius:"50%",background:digits[i]!=null?C2.accent:"#e2e2e5",transition:"background 0.15s"}}/>
+          ))}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:10}}>
+          {[1,2,3,4,5,6,7,8,9].map(d=>(
+            <button key={d} onClick={()=>handleDigit(String(d))} style={{padding:"14px 0",fontSize:20,fontWeight:700,fontFamily:"'Barlow Condensed',sans-serif",background:C2.surface,border:`1px solid ${C2.border}`,borderRadius:4,cursor:"pointer",transition:"all 0.1s"}}
+              onMouseEnter={e=>{e.currentTarget.style.borderColor=C2.accent;e.currentTarget.style.color=C2.accent;}}
+              onMouseLeave={e=>{e.currentTarget.style.borderColor=C2.border;e.currentTarget.style.color=C2.text;}}
+            >{d}</button>
+          ))}
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+          <button onClick={handleDel} style={{padding:"14px 0",fontSize:14,fontFamily:"'JetBrains Mono',monospace",background:C2.surface,border:`1px solid ${C2.border}`,borderRadius:4,cursor:"pointer",color:"#888"}}>⌫</button>
+          <button onClick={()=>handleDigit("0")} style={{padding:"14px 0",fontSize:20,fontWeight:700,fontFamily:"'Barlow Condensed',sans-serif",background:C2.surface,border:`1px solid ${C2.border}`,borderRadius:4,cursor:"pointer"}}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor=C2.accent;e.currentTarget.style.color=C2.accent;}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor=C2.border;e.currentTarget.style.color=C2.text;}}
+          >0</button>
+          <div/>
+        </div>
+      </div>
+      <style>{`@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}`}</style>
+    </div>
+  );
+}
+
 function App() {
   const mob = useMobile();
   const [contacts, setContacts] = useState([]);
@@ -5127,7 +5184,12 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<GmailProvider><App/></GmailProvider>);
+function Root() {
+  const [unlocked, setUnlocked] = React.useState(()=>sessionStorage.getItem("crm_unlocked")==="1");
+  if (!unlocked) return <PinScreen onUnlock={()=>setUnlocked(true)}/>;
+  return <GmailProvider><App/></GmailProvider>;
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Root/>);
 </script>
 </body>
 </html>
