@@ -1377,7 +1377,7 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
     setSaving(true);
     try {
       const payload = {};
-      ["first_name","last_name","email","cell","landline","company","subscription_status","last_activity_date","notes","cs_responsiveness","cs_incoming_ads","cs_done_deal"].forEach(k => {
+      ["first_name","last_name","email","cell","landline","company","subscription_status","last_activity_date","notes","cs_responsiveness","cs_incoming_ads","cs_done_deal","cs_location_fit"].forEach(k => {
         if (form[k] !== undefined) payload[k] = typeof form[k] === "string" ? form[k].trim() : form[k];
       });
       await supaFetch(`/contacts?id=eq.${contact.id}`, { method:"PATCH", body:JSON.stringify(payload) });
@@ -1408,6 +1408,7 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
         const done_deal = (updated.cs_done_deal||"").toLowerCase().trim();
         const responsiveness = (updated.cs_responsiveness||"").toLowerCase().trim();
         const incoming_ads = (updated.cs_incoming_ads||"").toLowerCase().trim();
+        const location_fit = (updated.cs_location_fit||"").toLowerCase().trim();
         let score = 0;
         for (const rule of (rules||[])) {
           switch(rule.signal_key) {
@@ -1418,6 +1419,8 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
             case "recent_activity": if(hasActivity) score+=rule.points; break;
             case "email_thread": if(hasSent&&hasReceived) score+=rule.points; break;
             case "cs_incoming_ads": if(incoming_ads&&!["","no","false","0","none"].includes(incoming_ads)) score+=rule.points; break;
+            case "cs_location_fit_la": if(location_fit==="la city/county areas") score+=rule.points; break;
+            case "cs_location_fit_ab1482": if(location_fit==="ab 1482 areas") score+=rule.points; break;
           }
         }
         score = Math.max(0, Math.min(100, score));
@@ -1446,7 +1449,7 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
 
   const handleCancel = () => { setForm({...contact}); setEditing(false); };
 
-  const shown = new Set(["id","first_name","last_name","name","full_name","email","cell","cell_phone","mobile","landline","phone","home_phone","subscription_status","subscribed","sub_status","bucket","bucket_name","last_activity_date","last_activity","last_active","notes","address","city","state","zip","created_at","updated_at","company","tags","contact_tags","contact_buckets","cs_responsiveness","cs_incoming_ads","cs_done_deal","ai_score","email_status"]);
+  const shown = new Set(["id","first_name","last_name","name","full_name","email","cell","cell_phone","mobile","landline","phone","home_phone","subscription_status","subscribed","sub_status","bucket","bucket_name","last_activity_date","last_activity","last_active","notes","address","city","state","zip","created_at","updated_at","company","tags","contact_tags","contact_buckets","cs_responsiveness","cs_incoming_ads","cs_done_deal","cs_location_fit","ai_score","email_status"]);
   const extras = Object.entries(contact).filter(([k])=>!shown.has(k)&&contact[k]!=null&&contact[k]!=="");
 
   return (
@@ -1526,6 +1529,7 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
               <ESelect label="CS - Responsiveness" field="cs_responsiveness" form={form} onChange={setField} options={["Responsive","Unresponsive","Attempted"]}/>
               <ESelect label="CS - Incoming Ads" field="cs_incoming_ads" form={form} onChange={setField} options={["Yes","No"]}/>
               <ESelect label="CS - Done Deal" field="cs_done_deal" form={form} onChange={setField} options={["Done 1+","Attempted","No"]}/>
+              <ESelect label="CS - Location Fit" field="cs_location_fit" form={form} onChange={setField} options={["LA City/County Areas","AB 1482 Areas"]}/>
             </div>
           </div>
           <div className="edit-section">
@@ -1616,8 +1620,8 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
             <TagsSection contactId={contact.id} editing={false}/>
           </div>
 
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
-            {[["CS - Responsiveness","cs_responsiveness"],["CS - Incoming Ads","cs_incoming_ads"],["CS - Done Deal","cs_done_deal"]].map(([label,field])=>(
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:10,marginBottom:10}}>
+            {[["CS - Responsiveness","cs_responsiveness"],["CS - Incoming Ads","cs_incoming_ads"],["CS - Done Deal","cs_done_deal"],["CS - Location Fit","cs_location_fit"]].map(([label,field])=>(
               <div key={field} className="us-field-card" style={{padding:"14px 16px"}}>
                 <div className="us-section-label">{label}</div>
                 <div style={{fontSize:14,fontWeight:600,color:contact[field]?C.text:C.textMuted}}>{contact[field]||"—"}</div>
@@ -1678,7 +1682,7 @@ const ContactDetail = ({ contact, onBack, onSave, onDelete, onSendEmail }) => {
 };
 
 // ── New Contact Form
-const EMPTY_CONTACT = { first_name:"", last_name:"", email:"", company:"", cell:"", landline:"", subscription_status:"", last_activity_date:"", notes:"", cs_responsiveness:"", cs_incoming_ads:"", cs_done_deal:"", ai_score:null };
+const EMPTY_CONTACT = { first_name:"", last_name:"", email:"", company:"", cell:"", landline:"", subscription_status:"", last_activity_date:"", notes:"", cs_responsiveness:"", cs_incoming_ads:"", cs_done_deal:"", cs_location_fit:"", ai_score:null };
 
 const NewContactForm = ({ onBack, onCreated }) => {
   const mob = useMobile();

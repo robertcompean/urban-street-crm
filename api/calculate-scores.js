@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     const [rules, investorBuckets, firstContactBatch] = await Promise.all([
       sb("/scoring_rules?enabled=eq.true"),
       sb("/buckets?name=ilike.%25investor%25&select=id"),
-      sb(`/contacts?select=id,cs_done_deal,cs_responsiveness,cs_incoming_ads&limit=1000&offset=0`),
+      sb(`/contacts?select=id,cs_done_deal,cs_responsiveness,cs_incoming_ads,cs_location_fit&limit=1000&offset=0`),
     ]);
 
     if (!rules?.length) return res.status(200).json({ success: true, processed: 0 });
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
     if (allContacts.length === 1000) {
       let offset = 1000;
       while (true) {
-        const batch = await sb(`/contacts?select=id,cs_done_deal,cs_responsiveness,cs_incoming_ads&limit=1000&offset=${offset}`);
+        const batch = await sb(`/contacts?select=id,cs_done_deal,cs_responsiveness,cs_incoming_ads,cs_location_fit&limit=1000&offset=${offset}`);
         if (!batch?.length) break;
         allContacts = allContacts.concat(batch);
         if (batch.length < 1000) break;
@@ -78,6 +78,7 @@ export default async function handler(req, res) {
       const done_deal = (contact.cs_done_deal || "").toLowerCase().trim();
       const responsiveness = (contact.cs_responsiveness || "").toLowerCase().trim();
       const incoming_ads = (contact.cs_incoming_ads || "").toLowerCase().trim();
+      const location_fit = (contact.cs_location_fit || "").toLowerCase().trim();
       const act = actMap[contact.id] || {};
       let score = 0;
 
@@ -97,6 +98,10 @@ export default async function handler(req, res) {
             if (act.hasSent && act.hasReceived) score += rule.points; break;
           case "cs_incoming_ads":
             if (incoming_ads && !["","no","false","0","none"].includes(incoming_ads)) score += rule.points; break;
+          case "cs_location_fit_la":
+            if (location_fit === "la city/county areas") score += rule.points; break;
+          case "cs_location_fit_ab1482":
+            if (location_fit === "ab 1482 areas") score += rule.points; break;
         }
       }
 
